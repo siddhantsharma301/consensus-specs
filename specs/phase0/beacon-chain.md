@@ -49,6 +49,7 @@
     - [`BeaconBlock`](#beaconblock)
   - [Beacon state](#beacon-state)
     - [`BeaconState`](#beaconstate)
+    - [`NewBlockSetPair`](#newblocksetpair)
   - [Signed envelopes](#signed-envelopes)
     - [`SignedVoluntaryExit`](#signedvoluntaryexit)
     - [`SignedBeaconBlock`](#signedbeaconblock)
@@ -560,6 +561,17 @@ class BeaconState(Container):
     previous_justified_checkpoint: Checkpoint  # Previous epoch snapshot
     current_justified_checkpoint: Checkpoint
     finalized_checkpoint: Checkpoint
+    # Gasper Siesta Diff
+    # Store at most total number of attestations per slot x last 8192 slots
+    # Upper bounding for now for sanity
+    new_block_set: List[NewBlockSetPair, MAX_ATTESTATIONS * SLOTS_PER_HISTORICAL_ROOT]
+```
+
+#### `NewBlockSetPair`
+```python
+class NewBlockSetPair(Container):
+    epoch: Epoch
+    block: BeaconBlock
 ```
 
 ### Signed envelopes
