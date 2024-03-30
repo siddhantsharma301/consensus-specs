@@ -5,137 +5,138 @@
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
-- [Introduction](#introduction)
-- [Notation](#notation)
-- [Custom types](#custom-types)
-- [Constants](#constants)
-  - [Misc](#misc)
-  - [Withdrawal prefixes](#withdrawal-prefixes)
-  - [Domain types](#domain-types)
-- [Preset](#preset)
-  - [Misc](#misc-1)
-  - [Gwei values](#gwei-values)
-  - [Time parameters](#time-parameters)
-  - [State list lengths](#state-list-lengths)
-  - [Rewards and penalties](#rewards-and-penalties)
-  - [Max operations per block](#max-operations-per-block)
-- [Configuration](#configuration)
-  - [Genesis settings](#genesis-settings)
-  - [Time parameters](#time-parameters-1)
-  - [Validator cycle](#validator-cycle)
-- [Containers](#containers)
-  - [Misc dependencies](#misc-dependencies)
-    - [`Fork`](#fork)
-    - [`ForkData`](#forkdata)
-    - [`Checkpoint`](#checkpoint)
-    - [`Validator`](#validator)
-    - [`AttestationData`](#attestationdata)
-    - [`IndexedAttestation`](#indexedattestation)
-    - [`PendingAttestation`](#pendingattestation)
-    - [`Eth1Data`](#eth1data)
-    - [`HistoricalBatch`](#historicalbatch)
-    - [`DepositMessage`](#depositmessage)
-    - [`DepositData`](#depositdata)
-    - [`BeaconBlockHeader`](#beaconblockheader)
-    - [`SigningData`](#signingdata)
-  - [Beacon operations](#beacon-operations)
-    - [`ProposerSlashing`](#proposerslashing)
-    - [`AttesterSlashing`](#attesterslashing)
-    - [`Attestation`](#attestation)
-    - [`Deposit`](#deposit)
-    - [`VoluntaryExit`](#voluntaryexit)
-  - [Beacon blocks](#beacon-blocks)
-    - [`BeaconBlockBody`](#beaconblockbody)
-    - [`BeaconBlock`](#beaconblock)
-  - [Beacon state](#beacon-state)
-    - [`BeaconState`](#beaconstate)
-    - [`NewBlockSetPair`](#newblocksetpair)
-  - [Signed envelopes](#signed-envelopes)
-    - [`SignedVoluntaryExit`](#signedvoluntaryexit)
-    - [`SignedBeaconBlock`](#signedbeaconblock)
-    - [`SignedBeaconBlockHeader`](#signedbeaconblockheader)
-- [Helper functions](#helper-functions)
-  - [Math](#math)
-    - [`integer_squareroot`](#integer_squareroot)
-    - [`xor`](#xor)
-    - [`uint_to_bytes`](#uint_to_bytes)
-    - [`bytes_to_uint64`](#bytes_to_uint64)
-    - [`saturating_sub`](#saturating_sub)
-  - [Crypto](#crypto)
-    - [`hash`](#hash)
-    - [`hash_tree_root`](#hash_tree_root)
-    - [BLS signatures](#bls-signatures)
-  - [Predicates](#predicates)
-    - [`is_active_validator`](#is_active_validator)
-    - [`is_eligible_for_activation_queue`](#is_eligible_for_activation_queue)
-    - [`is_eligible_for_activation`](#is_eligible_for_activation)
-    - [`is_slashable_validator`](#is_slashable_validator)
-    - [`is_slashable_attestation_data`](#is_slashable_attestation_data)
-    - [`is_valid_indexed_attestation`](#is_valid_indexed_attestation)
-    - [`is_valid_merkle_branch`](#is_valid_merkle_branch)
-  - [Misc](#misc-2)
-    - [`compute_shuffled_index`](#compute_shuffled_index)
-    - [`compute_proposer_index`](#compute_proposer_index)
-    - [`compute_committee`](#compute_committee)
-    - [`compute_epoch_at_slot`](#compute_epoch_at_slot)
-    - [`compute_start_slot_at_epoch`](#compute_start_slot_at_epoch)
-    - [`compute_activation_exit_epoch`](#compute_activation_exit_epoch)
-    - [`compute_fork_data_root`](#compute_fork_data_root)
-    - [`compute_fork_digest`](#compute_fork_digest)
-    - [`compute_domain`](#compute_domain)
-    - [`compute_signing_root`](#compute_signing_root)
-  - [Beacon state accessors](#beacon-state-accessors)
-    - [`get_current_epoch`](#get_current_epoch)
-    - [`get_previous_epoch`](#get_previous_epoch)
-    - [`get_block_root`](#get_block_root)
-    - [`get_block_root_at_slot`](#get_block_root_at_slot)
-    - [`get_randao_mix`](#get_randao_mix)
-    - [`get_active_validator_indices`](#get_active_validator_indices)
-    - [`get_validator_churn_limit`](#get_validator_churn_limit)
-    - [`get_seed`](#get_seed)
-    - [`get_committee_count_per_slot`](#get_committee_count_per_slot)
-    - [`get_beacon_committee`](#get_beacon_committee)
-    - [`get_beacon_proposer_index`](#get_beacon_proposer_index)
-    - [`get_total_balance`](#get_total_balance)
-    - [`get_total_active_balance`](#get_total_active_balance)
-    - [`get_domain`](#get_domain)
-    - [`get_indexed_attestation`](#get_indexed_attestation)
-    - [`get_attesting_indices`](#get_attesting_indices)
-  - [Beacon state mutators](#beacon-state-mutators)
-    - [`increase_balance`](#increase_balance)
-    - [`decrease_balance`](#decrease_balance)
-    - [`initiate_validator_exit`](#initiate_validator_exit)
-    - [`slash_validator`](#slash_validator)
-- [Genesis](#genesis)
-  - [Genesis state](#genesis-state)
-  - [Genesis block](#genesis-block)
-- [Beacon chain state transition function](#beacon-chain-state-transition-function)
-  - [Epoch processing](#epoch-processing)
-    - [Helper functions](#helper-functions-1)
-    - [Justification and finalization](#justification-and-finalization)
-    - [Rewards and penalties](#rewards-and-penalties-1)
-      - [Helpers](#helpers)
-      - [Components of attestation deltas](#components-of-attestation-deltas)
-      - [`get_attestation_deltas`](#get_attestation_deltas)
-      - [`process_rewards_and_penalties`](#process_rewards_and_penalties)
-    - [Registry updates](#registry-updates)
-    - [Slashings](#slashings)
-    - [Eth1 data votes updates](#eth1-data-votes-updates)
-    - [Effective balances updates](#effective-balances-updates)
-    - [Slashings balances updates](#slashings-balances-updates)
-    - [Randao mixes updates](#randao-mixes-updates)
-    - [Historical roots updates](#historical-roots-updates)
-    - [Participation records rotation](#participation-records-rotation)
-  - [Block processing](#block-processing)
-    - [Block header](#block-header)
-    - [RANDAO](#randao)
-    - [Eth1 data](#eth1-data)
-    - [Operations](#operations)
-      - [Proposer slashings](#proposer-slashings)
-      - [Attester slashings](#attester-slashings)
-      - [Attestations](#attestations)
-      - [Deposits](#deposits)
-      - [Voluntary exits](#voluntary-exits)
+- [Phase 0 -- The Beacon Chain](#phase-0----the-beacon-chain)
+  - [Table of contents](#table-of-contents)
+  - [Introduction](#introduction)
+  - [Notation](#notation)
+  - [Custom types](#custom-types)
+  - [Constants](#constants)
+    - [Misc](#misc)
+    - [Withdrawal prefixes](#withdrawal-prefixes)
+    - [Domain types](#domain-types)
+  - [Preset](#preset)
+    - [Misc](#misc-1)
+    - [Gwei values](#gwei-values)
+    - [Time parameters](#time-parameters)
+    - [State list lengths](#state-list-lengths)
+    - [Rewards and penalties](#rewards-and-penalties)
+    - [Max operations per block](#max-operations-per-block)
+  - [Configuration](#configuration)
+    - [Genesis settings](#genesis-settings)
+    - [Time parameters](#time-parameters-1)
+    - [Validator cycle](#validator-cycle)
+  - [Containers](#containers)
+    - [Misc dependencies](#misc-dependencies)
+      - [`Fork`](#fork)
+      - [`ForkData`](#forkdata)
+      - [`Checkpoint`](#checkpoint)
+      - [`Validator`](#validator)
+      - [`AttestationData`](#attestationdata)
+      - [`IndexedAttestation`](#indexedattestation)
+      - [`PendingAttestation`](#pendingattestation)
+      - [`Eth1Data`](#eth1data)
+      - [`HistoricalBatch`](#historicalbatch)
+      - [`DepositMessage`](#depositmessage)
+      - [`DepositData`](#depositdata)
+      - [`BeaconBlockHeader`](#beaconblockheader)
+      - [`SigningData`](#signingdata)
+    - [Beacon operations](#beacon-operations)
+      - [`ProposerSlashing`](#proposerslashing)
+      - [`AttesterSlashing`](#attesterslashing)
+      - [`Attestation`](#attestation)
+      - [`Deposit`](#deposit)
+      - [`VoluntaryExit`](#voluntaryexit)
+    - [Beacon blocks](#beacon-blocks)
+      - [`BeaconBlockBody`](#beaconblockbody)
+      - [`BeaconBlock`](#beaconblock)
+    - [Beacon state](#beacon-state)
+      - [`BeaconState`](#beaconstate)
+    - [Signed envelopes](#signed-envelopes)
+      - [`SignedVoluntaryExit`](#signedvoluntaryexit)
+      - [`SignedBeaconBlock`](#signedbeaconblock)
+      - [`SignedBeaconBlockHeader`](#signedbeaconblockheader)
+  - [Helper functions](#helper-functions)
+    - [Math](#math)
+      - [`integer_squareroot`](#integer_squareroot)
+      - [`xor`](#xor)
+      - [`uint_to_bytes`](#uint_to_bytes)
+      - [`bytes_to_uint64`](#bytes_to_uint64)
+      - [`saturating_sub`](#saturating_sub)
+    - [Crypto](#crypto)
+      - [`hash`](#hash)
+      - [`hash_tree_root`](#hash_tree_root)
+      - [BLS signatures](#bls-signatures)
+    - [Predicates](#predicates)
+      - [`is_active_validator`](#is_active_validator)
+      - [`is_eligible_for_activation_queue`](#is_eligible_for_activation_queue)
+      - [`is_eligible_for_activation`](#is_eligible_for_activation)
+      - [`is_slashable_validator`](#is_slashable_validator)
+      - [`is_slashable_attestation_data`](#is_slashable_attestation_data)
+      - [`is_valid_indexed_attestation`](#is_valid_indexed_attestation)
+      - [`is_valid_merkle_branch`](#is_valid_merkle_branch)
+    - [Misc](#misc-2)
+      - [`compute_shuffled_index`](#compute_shuffled_index)
+      - [`compute_proposer_index`](#compute_proposer_index)
+      - [`compute_committee`](#compute_committee)
+      - [`compute_epoch_at_slot`](#compute_epoch_at_slot)
+      - [`compute_start_slot_at_epoch`](#compute_start_slot_at_epoch)
+      - [`compute_activation_exit_epoch`](#compute_activation_exit_epoch)
+      - [`compute_fork_data_root`](#compute_fork_data_root)
+      - [`compute_fork_digest`](#compute_fork_digest)
+      - [`compute_domain`](#compute_domain)
+      - [`compute_signing_root`](#compute_signing_root)
+    - [Beacon state accessors](#beacon-state-accessors)
+      - [`get_current_epoch`](#get_current_epoch)
+      - [`get_previous_epoch`](#get_previous_epoch)
+      - [`get_block_root`](#get_block_root)
+      - [`get_block_root_at_slot`](#get_block_root_at_slot)
+      - [`get_randao_mix`](#get_randao_mix)
+      - [`get_active_validator_indices`](#get_active_validator_indices)
+      - [`get_validator_churn_limit`](#get_validator_churn_limit)
+      - [`get_seed`](#get_seed)
+      - [`get_committee_count_per_slot`](#get_committee_count_per_slot)
+      - [`get_beacon_committee`](#get_beacon_committee)
+      - [`get_beacon_proposer_index`](#get_beacon_proposer_index)
+      - [`get_total_balance`](#get_total_balance)
+      - [`get_total_active_balance`](#get_total_active_balance)
+      - [`get_domain`](#get_domain)
+      - [`get_indexed_attestation`](#get_indexed_attestation)
+      - [`get_attesting_indices`](#get_attesting_indices)
+    - [Beacon state mutators](#beacon-state-mutators)
+      - [`increase_balance`](#increase_balance)
+      - [`decrease_balance`](#decrease_balance)
+      - [`initiate_validator_exit`](#initiate_validator_exit)
+      - [`slash_validator`](#slash_validator)
+  - [Genesis](#genesis)
+    - [Genesis state](#genesis-state)
+    - [Genesis block](#genesis-block)
+  - [Beacon chain state transition function](#beacon-chain-state-transition-function)
+    - [Epoch processing](#epoch-processing)
+      - [Helper functions](#helper-functions-1)
+      - [Justification and finalization](#justification-and-finalization)
+      - [Rewards and penalties](#rewards-and-penalties-1)
+        - [Helpers](#helpers)
+        - [Components of attestation deltas](#components-of-attestation-deltas)
+        - [`get_attestation_deltas`](#get_attestation_deltas)
+        - [`process_rewards_and_penalties`](#process_rewards_and_penalties)
+      - [Registry updates](#registry-updates)
+      - [Slashings](#slashings)
+      - [Eth1 data votes updates](#eth1-data-votes-updates)
+      - [Effective balances updates](#effective-balances-updates)
+      - [Slashings balances updates](#slashings-balances-updates)
+      - [Randao mixes updates](#randao-mixes-updates)
+      - [Historical roots updates](#historical-roots-updates)
+      - [Participation records rotation](#participation-records-rotation)
+    - [Block processing](#block-processing)
+      - [Block header](#block-header)
+      - [RANDAO](#randao)
+      - [Eth1 data](#eth1-data)
+      - [Operations](#operations)
+        - [Proposer slashings](#proposer-slashings)
+        - [Attester slashings](#attester-slashings)
+        - [Attestations](#attestations)
+        - [Deposits](#deposits)
+        - [Voluntary exits](#voluntary-exits)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 <!-- /TOC -->
@@ -562,17 +563,18 @@ class BeaconState(Container):
     current_justified_checkpoint: Checkpoint
     finalized_checkpoint: Checkpoint
     # Gasper Siesta Diff
-    # Store at most total number of attestations per slot x last 8192 slots
+    # Store attestations for previous blocks. Store at most total number of attestations per slot x last 8192 slots
     # Upper bounding for now for sanity
-    new_block_set: List[NewBlockSetPair, MAX_ATTESTATIONS * SLOTS_PER_HISTORICAL_ROOT]
+    # TODO: Add places for appending and removing from this data structure
+    historical_attestations: List[Attestation, MAX_ATTESTATIONS * SLOTS_PER_HISTORICAL_ROOT]
 ```
 
-#### `NewBlockSetPair`
+<!-- #### `NewBlockSetPair`
 ```python
 class NewBlockSetPair(Container):
     epoch: Epoch
     block: BeaconBlock
-```
+``` -->
 
 ### Signed envelopes
 
@@ -1369,7 +1371,7 @@ def get_attesting_balance(state: BeaconState, attestations: Sequence[PendingAtte
 #### Justification and finalization
 
 ```python
-def process_justification_and_finalization(state: BeaconState) -> None:
+def **process_justification_and_finalization**(state: BeaconState) -> None:
     # Initial FFG checkpoint values have a `0x00` stub for `root`.
     # Skip FFG updates in the first two epochs to avoid corner cases that might result in modifying this stub.
     if get_current_epoch(state) <= GENESIS_EPOCH + 1:
@@ -1406,19 +1408,25 @@ def weigh_justification_and_finalization(state: BeaconState,
         state.justification_bits[0] = 0b1
 
     # Process finalizations
-    bits = state.justification_bits
-    # The 2nd/3rd/4th most recent epochs are justified, the 2nd using the 4th as source
-    if all(bits[1:4]) and old_previous_justified_checkpoint.epoch + 3 == current_epoch:
-        state.finalized_checkpoint = old_previous_justified_checkpoint
-    # The 2nd/3rd most recent epochs are justified, the 2nd using the 3rd as source
-    if all(bits[1:3]) and old_previous_justified_checkpoint.epoch + 2 == current_epoch:
-        state.finalized_checkpoint = old_previous_justified_checkpoint
-    # The 1st/2nd/3rd most recent epochs are justified, the 1st using the 3rd as source
-    if all(bits[0:3]) and old_current_justified_checkpoint.epoch + 2 == current_epoch:
-        state.finalized_checkpoint = old_current_justified_checkpoint
-    # The 1st/2nd most recent epochs are justified, the 1st using the 2nd as source
-    if all(bits[0:2]) and old_current_justified_checkpoint.epoch + 1 == current_epoch:
-        state.finalized_checkpoint = old_current_justified_checkpoint
+    # We want to check if we can commit anything between previous justified checkpoint and current
+    # produced block
+    for epoch in range(old_previous_justified_checkpoint.epoch, current_epoch):
+       attestations = get_matching_target_attestations(state, epoch)
+        # TODO: Compute stake for conflicting blocks against current block root we are checking
+        # If the conflicting block stake is greater than 1/3, we CANNOT commit this block. Otherwise, we can commit (assuming it is justified)
+    # bits = state.justification_bits
+    # # The 2nd/3rd/4th most recent epochs are justified, the 2nd using the 4th as source
+    # if all(bits[1:4]) and old_previous_justified_checkpoint.epoch + 3 == current_epoch:
+    #     state.finalized_checkpoint = old_previous_justified_checkpoint
+    # # The 2nd/3rd most recent epochs are justified, the 2nd using the 3rd as source
+    # if all(bits[1:3]) and old_previous_justified_checkpoint.epoch + 2 == current_epoch:
+    #     state.finalized_checkpoint = old_previous_justified_checkpoint
+    # # The 1st/2nd/3rd most recent epochs are justified, the 1st using the 3rd as source
+    # if all(bits[0:3]) and old_current_justified_checkpoint.epoch + 2 == current_epoch:
+    #     state.finalized_checkpoint = old_current_justified_checkpoint
+    # # The 1st/2nd most recent epochs are justified, the 1st using the 2nd as source
+    # if all(bits[0:2]) and old_current_justified_checkpoint.epoch + 1 == current_epoch:
+    #     state.finalized_checkpoint = old_current_justified_checkpoint
 ```
 
 #### Rewards and penalties
