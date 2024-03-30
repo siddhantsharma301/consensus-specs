@@ -569,12 +569,6 @@ class BeaconState(Container):
     historical_attestations: List[Attestation, MAX_ATTESTATIONS * SLOTS_PER_HISTORICAL_ROOT]
 ```
 
-<!-- #### `NewBlockSetPair`
-```python
-class NewBlockSetPair(Container):
-    epoch: Epoch
-    block: BeaconBlock
-``` -->
 
 ### Signed envelopes
 
@@ -1371,7 +1365,7 @@ def get_attesting_balance(state: BeaconState, attestations: Sequence[PendingAtte
 #### Justification and finalization
 
 ```python
-def **process_justification_and_finalization**(state: BeaconState) -> None:
+def process_justification_and_finalization(state: BeaconState) -> None:
     # Initial FFG checkpoint values have a `0x00` stub for `root`.
     # Skip FFG updates in the first two epochs to avoid corner cases that might result in modifying this stub.
     if get_current_epoch(state) <= GENESIS_EPOCH + 1:
@@ -1411,9 +1405,10 @@ def weigh_justification_and_finalization(state: BeaconState,
     # We want to check if we can commit anything between previous justified checkpoint and current
     # produced block
     for epoch in range(old_previous_justified_checkpoint.epoch, current_epoch):
-       attestations = get_matching_target_attestations(state, epoch)
         # TODO: Compute stake for conflicting blocks against current block root we are checking
         # If the conflicting block stake is greater than 1/3, we CANNOT commit this block. Otherwise, we can commit (assuming it is justified)
+         
+    
     # bits = state.justification_bits
     # # The 2nd/3rd/4th most recent epochs are justified, the 2nd using the 4th as source
     # if all(bits[1:4]) and old_previous_justified_checkpoint.epoch + 3 == current_epoch:
