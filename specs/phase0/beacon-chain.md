@@ -566,7 +566,8 @@ class BeaconState(Container):
     # Store attestations for previous blocks. Store at most total number of attestations per slot x last 8192 slots
     # Upper bounding for now for sanity
     # TODO: Add places for appending and removing from this data structure
-    historical_attestations: List[Attestation, MAX_ATTESTATIONS * SLOTS_PER_HISTORICAL_ROOT]
+    historical_attestations: Vector[Attestation, MAX_ATTESTATIONS * SLOTS_PER_HISTORICAL_ROOT]
+    historical_epoch_block_roots: Vector[Root, SLOTS_PER_HISTORICAL_ROOT]
 ```
 
 
@@ -1401,14 +1402,14 @@ def weigh_justification_and_finalization(state: BeaconState,
                                                         root=get_block_root(state, current_epoch))
         state.justification_bits[0] = 0b1
 
+    for epoch in range(state.previous_justified_checkpoint.epoch, current_epoch):
+        previous_block_root = state.historical_block_roots[epoch % SLOTS_PER_HISTORICAL_ROOT]
+        conflicting_stake = get_conflicting_historical_attestation_stake(state, epoch, previous_block_root)
+        # FIXME: incorrect threshold, need to fix with real values:
+        if conflicting_stake > 1 / 3:
+            break
+    # TODO: write code to commit rest of the blocks here
     # Process finalizations
-    # We want to check if we can commit anything between previous justified checkpoint and current
-    # produced block
-    for epoch in range(old_previous_justified_checkpoint.epoch, current_epoch):
-        # TODO: Compute stake for conflicting blocks against current block root we are checking
-        # If the conflicting block stake is greater than 1/3, we CANNOT commit this block. Otherwise, we can commit (assuming it is justified)
-         
-    
     # bits = state.justification_bits
     # # The 2nd/3rd/4th most recent epochs are justified, the 2nd using the 4th as source
     # if all(bits[1:4]) and old_previous_justified_checkpoint.epoch + 3 == current_epoch:
@@ -1427,6 +1428,33 @@ def weigh_justification_and_finalization(state: BeaconState,
 #### Rewards and penalties
 
 ##### Helpers
+
+```python
+def get_matching_historical_target_attestations(state: BeaconState, epoch: Epoch, block_root: Root) -> Sequence[Attestation]:
+    return [
+        a for a in state.historical_attestations 
+        if a.data.target.root == block_root and a.data.target.epoch == epoch
+    ]
+```
+
+```python
+def get_conflicting_historical_attestation_stake(state: BeaconState, epoch: Epoch, block_root: Root) -> Gwei:
+    """
+    Return the total stake of validators that made conflicting attestations for the given epoch and block root.
+    """
+    matching_attestations = get_matching_historical_target_attestations(state, epoch, block_root)
+    matching_indices = set()
+    for attestation in matching_attestations:
+        matching_indices.get(get_attesting_indices(state, attestation))
+    conflict_stake = Gwei(0)
+    for attestation in state.historical_attestations:
+        if attestation.data.target.epoch == epoch and attestation.data.target.root != block_root:
+            for index in get_attesting_indices(state, attestation):
+                if index in matching_indices:
+                    # TODO: Check if we can check historical effective balance
+                    conflicting_stake += stake.validators[index].effective_balance
+    return conflicting_stake
+```
 
 ```python
 def get_base_reward(state: BeaconState, index: ValidatorIndex) -> Gwei:
