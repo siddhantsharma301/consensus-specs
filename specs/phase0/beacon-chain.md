@@ -114,8 +114,9 @@
     - [Epoch processing](#epoch-processing)
       - [Helper functions](#helper-functions-1)
       - [Justification and finalization](#justification-and-finalization)
-      - [Rewards and penalties](#rewards-and-penalties-1)
         - [Helpers](#helpers)
+      - [Rewards and penalties](#rewards-and-penalties-1)
+        - [Helpers](#helpers-1)
         - [Components of attestation deltas](#components-of-attestation-deltas)
         - [`get_attestation_deltas`](#get_attestation_deltas)
         - [`process_rewards_and_penalties`](#process_rewards_and_penalties)
@@ -1405,27 +1406,11 @@ def weigh_justification_and_finalization(state: BeaconState,
     for epoch in range(state.previous_justified_checkpoint.epoch, current_epoch):
         previous_block_root = state.historical_block_roots[epoch % SLOTS_PER_HISTORICAL_ROOT]
         conflicting_stake = get_conflicting_historical_attestation_stake(state, epoch, previous_block_root)
-        # FIXME: incorrect threshold, need to fix with real values:
-        if conflicting_stake > 1 / 3:
+        if conflicting_stake * 3 > get_total_active_balance_at_epoch(state, epoch):
             break
-    # TODO: write code to commit rest of the blocks here
-    # Process finalizations
-    # bits = state.justification_bits
-    # # The 2nd/3rd/4th most recent epochs are justified, the 2nd using the 4th as source
-    # if all(bits[1:4]) and old_previous_justified_checkpoint.epoch + 3 == current_epoch:
-    #     state.finalized_checkpoint = old_previous_justified_checkpoint
-    # # The 2nd/3rd most recent epochs are justified, the 2nd using the 3rd as source
-    # if all(bits[1:3]) and old_previous_justified_checkpoint.epoch + 2 == current_epoch:
-    #     state.finalized_checkpoint = old_previous_justified_checkpoint
-    # # The 1st/2nd/3rd most recent epochs are justified, the 1st using the 3rd as source
-    # if all(bits[0:3]) and old_current_justified_checkpoint.epoch + 2 == current_epoch:
-    #     state.finalized_checkpoint = old_current_justified_checkpoint
-    # # The 1st/2nd most recent epochs are justified, the 1st using the 2nd as source
-    # if all(bits[0:2]) and old_current_justified_checkpoint.epoch + 1 == current_epoch:
-    #     state.finalized_checkpoint = old_current_justified_checkpoint
+    # TODO: does this work correctly? unsure
+    state.finalized_checkpoint = old_current_justified_checkpoint
 ```
-
-#### Rewards and penalties
 
 ##### Helpers
 
@@ -1443,7 +1428,7 @@ def get_conflicting_historical_attestation_stake(state: BeaconState, epoch: Epoc
     Return the total stake of validators that made conflicting attestations for the given epoch and block root.
     """
     matching_attestations = get_matching_historical_target_attestations(state, epoch, block_root)
-    matching_indices = set()
+    matching_indices = set() # Type: Set[ValidatorIndex]
     for attestation in matching_attestations:
         matching_indices.get(get_attesting_indices(state, attestation))
     conflict_stake = Gwei(0)
@@ -1456,6 +1441,16 @@ def get_conflicting_historical_attestation_stake(state: BeaconState, epoch: Epoc
     return conflicting_stake
 ```
 
+```python
+def get_total_active_balance_at_epoch(state: BeaconState, epoch: Epoch) -> Gwei:
+    return Gwei(sum(
+        state.validators[index].effective_balance for index in get_active_validator_indices(state, epoch)
+    ))
+```
+
+#### Rewards and penalties
+
+##### Helpers
 ```python
 def get_base_reward(state: BeaconState, index: ValidatorIndex) -> Gwei:
     total_balance = get_total_active_balance(state)
