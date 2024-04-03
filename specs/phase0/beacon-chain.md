@@ -188,7 +188,7 @@ The following values are (non-configurable) constants used throughout the specif
 | `FAR_FUTURE_EPOCH` | `Epoch(2**64 - 1)` |
 | `BASE_REWARDS_PER_EPOCH` | `uint64(4)` |
 | `DEPOSIT_CONTRACT_TREE_DEPTH` | `uint64(2**5)` (= 32) |
-| `JUSTIFICATION_BITS_LENGTH` | `uint64(4)` |
+| `JUSTIFICATION_BITS_LENGTH` | `uint64(256)` |
 | `ENDIANNESS` | `'little'` |
 
 ### Withdrawal prefixes
@@ -252,6 +252,8 @@ Additional preset configurations can be found in the [`configs`](../../configs) 
 | `MIN_EPOCHS_TO_INACTIVITY_PENALTY` | `uint64(2**2)` (= 4) | epochs | 25.6 minutes |
 | `EPOCHS_PER_ETH1_VOTING_PERIOD` | `uint64(2**6)` (= 64) | epochs | ~6.8 hours |
 | `SLOTS_PER_HISTORICAL_ROOT` | `uint64(2**13)` (= 8,192) | slots | ~27 hours |
+| `HISTORICAL_FINALITY_EPOCHS` | `uint64(2**8)` | epochs | ~27 hours |
+
 
 ### State list lengths
 
@@ -567,8 +569,8 @@ class BeaconState(Container):
     # Store attestations for previous blocks. Store at most total number of attestations per slot x last 8192 slots
     # Upper bounding for now for sanity
     # TODO: Add places for appending and removing from this data structure
-    historical_attestations: Vector[Attestation, MAX_ATTESTATIONS * SLOTS_PER_HISTORICAL_ROOT]
-    historical_epoch_block_roots: Vector[Root, SLOTS_PER_HISTORICAL_ROOT]
+    historical_attestations: Vector[Attestation, MAX_ATTESTATIONS * HISTORICAL_FINALITY_EPOCHS]
+    historical_epoch_block_roots: Vector[Root, HISTORICAL_FINALITY_EPOCHS]
 ```
 
 
@@ -1406,10 +1408,10 @@ def weigh_justification_and_finalization(state: BeaconState,
     for epoch in range(state.previous_justified_checkpoint.epoch, current_epoch):
         previous_block_root = state.historical_block_roots[epoch % SLOTS_PER_HISTORICAL_ROOT]
         conflicting_stake = get_conflicting_historical_attestation_stake(state, epoch, previous_block_root)
+        # FIXME: threshold wrong
         if conflicting_stake * 3 > get_total_active_balance_at_epoch(state, epoch):
             break
-    # TODO: does this work correctly? unsure
-    state.finalized_checkpoint = old_current_justified_checkpoint
+    state.finalized_checkpoint = state.previous_justified_checkpoint
 ```
 
 ##### Helpers
@@ -1426,23 +1428,19 @@ def get_matching_historical_target_attestations(state: BeaconState, epoch: Epoch
 def get_conflicting_historical_attestation_stake(state: BeaconState, epoch: Epoch, block_root: Root) -> Gwei:
     """
     Return the total stake of validators that made conflicting attestations for the given epoch and block root.
-    """
-    matching_attestations = get_matching_historical_target_attestations(state, epoch, block_root)
-    matching_indices = set() # Type: Set[ValidatorIndex]
-    for attestation in matching_attestations:
-        matching_indices.get(get_attesting_indices(state, attestation))
+    """ 
     conflict_stake = Gwei(0)
     for attestation in state.historical_attestations:
         if attestation.data.target.epoch == epoch and attestation.data.target.root != block_root:
             for index in get_attesting_indices(state, attestation):
-                if index in matching_indices:
-                    # TODO: Check if we can check historical effective balance
-                    conflicting_stake += stake.validators[index].effective_balance
+                # TODO: Check if we can check historical effective balance
+                conflicting_stake += state.validators[index].effective_balance
     return conflicting_stake
 ```
 
 ```python
 def get_total_active_balance_at_epoch(state: BeaconState, epoch: Epoch) -> Gwei:
+    # TODO: Check if we can check historical effective balance
     return Gwei(sum(
         state.validators[index].effective_balance for index in get_active_validator_indices(state, epoch)
     ))
