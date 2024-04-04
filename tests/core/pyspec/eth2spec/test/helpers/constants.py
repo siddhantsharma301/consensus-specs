@@ -20,6 +20,7 @@ EIP6110 = SpecForkName('eip6110')
 EIP7002 = SpecForkName('eip7002')
 WHISK = SpecForkName('whisk')
 EIP7594 = SpecForkName('eip7594')
+GASPER_SIESTA = SpecForkName('gasper_siesta')
 
 #
 # SpecFork settings
@@ -39,6 +40,7 @@ ALL_PHASES = (
     EIP6110,
     EIP7002,
     EIP7594,
+    GASPER_SIESTA
 )
 # The forks that have light client specs
 LIGHT_CLIENT_TESTING_FORKS = (*[item for item in MAINNET_FORKS if item != PHASE0], DENEB)
@@ -60,6 +62,7 @@ PREVIOUS_FORK_OF = {
     WHISK: CAPELLA,
     EIP7002: CAPELLA,
     EIP7594: DENEB,
+    GASPER_SIESTA: PHASE0,
 }
 
 # For fork transition tests

@@ -11,6 +11,7 @@ from .constants import (
     EIP7549,
     WHISK,
     EIP7594,
+    GASPER_SIESTA
 )
 
 
@@ -25,6 +26,7 @@ PREVIOUS_FORK_OF = {
     WHISK: CAPELLA,
     EIP7002: CAPELLA,
     EIP7594: DENEB,
+    GASPER_SIESTA: PHASE0
 }
 
 ALL_FORKS = list(PREVIOUS_FORK_OF.keys())
