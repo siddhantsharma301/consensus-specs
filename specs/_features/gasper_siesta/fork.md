@@ -5,14 +5,16 @@
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
-- [Introduction](#introduction)
-- [Configuration](#configuration)
-- [Helper functions](#helper-functions)
-  - [Misc](#misc)
-    - [`compute_fork_version`](#compute_fork_version)
-- [Fork to Gasper-Siesta](#fork-to-gasper-siesta)
-  - [Fork trigger](#fork-trigger)
-  - [Upgrading the state](#upgrading-the-state)
+- [Gasper-Siesta -- Fork Logic](#gasper-siesta----fork-logic)
+  - [Table of contents](#table-of-contents)
+  - [Introduction](#introduction)
+  - [Configuration](#configuration)
+  - [Helper functions](#helper-functions)
+    - [Misc](#misc)
+      - [`compute_fork_version`](#compute_fork_version)
+  - [Fork to Gasper-Siesta](#fork-to-gasper-siesta)
+    - [Fork trigger](#fork-trigger)
+    - [Upgrading the state](#upgrading-the-state)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -60,16 +62,33 @@ Care must be taken when transitioning through the fork boundary as implementatio
 In particular, the outer `state_transition` function defined in the Phase 0 document will not expose the precise fork slot to execute the upgrade in the presence of skipped slots at the fork boundary. Instead the logic must be within `process_slots`.
 
 ```python
-
-def populate_historical_epoch_attestations(pre: phase0.BeaconState) -> List[Attestation]:
+def populate_historical_epoch_attestations(pre: phase0.BeaconState) -> Vector[Vector[Attestation, MAX_ATTESTATIONS], HISTORICAL_EPOCH_FINALITY_WINDOW]:
     """
-    Populate the historical_epoch_attestations with attestations from the end of every epoch in the pre-state container.
-    Due to how the spec is structured, we cannot fetch ALL previous attestations, as they are discarded outside the 2 epoch window. Thus, we start by populating just the previous and current epochs.
+    Populate the historical_epoch_attestations with attestations from the end of every epoch
+    in the pre-state container. For epochs beyond the last two, where specific attestations
+    cannot be retrieved, placeholders will be used.
     """
     historical_epoch_attestations = []
-    historical_epoch_attestations.append(get_matching_target_attestations(get_previous_epoch(pre)))
-    historical_epoch_attestations.append(get_matching_target_attestations(get_current_epoch(pre)))
-    return historical_epoch_attestations
+    current_epoch = phase0.get_current_epoch(pre)
+    previous_epoch = phase0.get_previous_epoch(pre)
+
+    # Populate for the last two epochs with actual data
+    if previous_epoch > 0 and previous_epoch != current_epoch:
+        previous_epoch_attestations = get_matching_target_attestations(pre, previous_epoch)
+        assert len(previous_epoch_attestations) <= MAX_ATTESTATIONS, "Exceeded MAX_ATTESTATIONS for previous epoch"
+        historical_epoch_attestations.insert(0, Vector(previous_epoch_attestations, MAX_ATTESTATIONS))  # Insert at the beginning
+
+    if current_epoch > 0:
+        current_epoch_attestations = get_matching_target_attestations(pre, current_epoch)
+        assert len(current_epoch_attestations) <= MAX_ATTESTATIONS, "Exceeded MAX_ATTESTATIONS for current epoch"
+        historical_epoch_attestations.append(Vector(current_epoch_attestations, MAX_ATTESTATIONS))
+
+    # Placeholder for other epochs
+    placeholder_attestations = Vector([], MAX_ATTESTATIONS)
+    while len(historical_epoch_attestations) < HISTORICAL_EPOCH_FINALITY_WINDOW:
+        historical_epoch_attestations.insert(0, placeholder_attestations)  # Insert at the beginning to maintain chronological order
+
+    return Vector(historical_epoch_attestations, HISTORICAL_EPOCH_FINALITY_WINDOW)
 
 def get_block_root_at_epoch(pre: BeaconState, epoch: Epoch) -> Root:
     # Calculate the slot at the end of the epoch
