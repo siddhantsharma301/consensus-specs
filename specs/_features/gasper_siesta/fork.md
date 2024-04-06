@@ -5,16 +5,14 @@
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
-- [Gasper-Siesta -- Fork Logic](#gasper-siesta----fork-logic)
-  - [Table of contents](#table-of-contents)
-  - [Introduction](#introduction)
-  - [Configuration](#configuration)
-  - [Helper functions](#helper-functions)
-    - [Misc](#misc)
-      - [`compute_fork_version`](#compute_fork_version)
-  - [Fork to Gasper-Siesta](#fork-to-gasper-siesta)
-    - [Fork trigger](#fork-trigger)
-    - [Upgrading the state](#upgrading-the-state)
+- [Introduction](#introduction)
+- [Configuration](#configuration)
+- [Helper functions](#helper-functions)
+  - [Misc](#misc)
+    - [`compute_fork_version`](#compute_fork_version)
+- [Fork to Gasper-Siesta](#fork-to-gasper-siesta)
+  - [Fork trigger](#fork-trigger)
+  - [Upgrading the state](#upgrading-the-state)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -62,8 +60,45 @@ Care must be taken when transitioning through the fork boundary as implementatio
 In particular, the outer `state_transition` function defined in the Phase 0 document will not expose the precise fork slot to execute the upgrade in the presence of skipped slots at the fork boundary. Instead the logic must be within `process_slots`.
 
 ```python
+
+def populate_historical_epoch_attestations(pre: phase0.BeaconState) -> List[Attestation]:
+    """
+    Populate the historical_epoch_attestations with attestations from the end of every epoch in the pre-state container.
+    Due to how the spec is structured, we cannot fetch ALL previous attestations, as they are discarded outside the 2 epoch window. Thus, we start by populating just the previous and current epochs.
+    """
+    historical_epoch_attestations = []
+    historical_epoch_attestations.append(get_matching_target_attestations(get_previous_epoch(pre)))
+    historical_epoch_attestations.append(get_matching_target_attestations(get_current_epoch(pre)))
+    return historical_epoch_attestations
+
+def get_block_root_at_epoch(pre: BeaconState, epoch: Epoch) -> Root:
+    # Calculate the slot at the end of the epoch
+    epoch_end_slot = (epoch + 1) * SLOTS_PER_EPOCH - 1
+    # Ensure the requested epoch is within the historical bounds
+    assert epoch <= state.current_epoch() + HISTORICAL_ROOTS_LIMIT // SLOTS_PER_EPOCH, "Requested epoch is too far in history"
+    # Index into the state's block roots array to retrieve the block root
+    block_root_index = epoch_end_slot % SLOTS_PER_HISTORICAL_ROOT
+    block_root = state.block_roots[block_root_index]
+    return block_root
+
+def populate_historical_epoch_block_roots(pre: phase0.BeaconState) -> List[Root]:
+    """
+    Populate the historical_epoch_block_roots with block roots from the end of every epoch
+    in the pre-state container.
+    """
+    historical_epoch_block_roots = []
+    current_epoch = phase0.get_current_epoch(pre)
+    start_epoch = max(0, current_epoch - HISTORICAL_EPOCH_FINALITY_WINDOW)
+    for epoch in range(start_epoch, current_epoch):
+        epoch_block_root = get_block_root_at_epoch(pre, epoch)
+        historical_epoch_block_roots.append(epoch_block_root)
+        # Ensure the list is capped at the size defined by HISTORICAL_EPOCH_FINALITY_WINDOW
+        # This is necessary if the number of collected block roots exceeds the storage limit.
+        historical_epoch_block_roots = historical_epoch_block_roots[:HISTORICAL_EPOCH_FINALITY_WINDOW]
+    return historical_epoch_block_roots
+
 # TODO: FIX THIS FUNCTION
-def upgrade_to_altair(pre: phase0.BeaconState) -> BeaconState:
+def upgrade_to_gasper_siesta(pre: phase0.BeaconState) -> BeaconState:
     epoch = phase0.get_current_epoch(pre)
     post = BeaconState(
         # Versioning
@@ -91,16 +126,17 @@ def upgrade_to_altair(pre: phase0.BeaconState) -> BeaconState:
         randao_mixes=pre.randao_mixes,
         # Slashings
         slashings=pre.slashings,
-        # Participation
-        previous_epoch_participation=[ParticipationFlags(0b0000_0000) for _ in range(len(pre.validators))],
-        current_epoch_participation=[ParticipationFlags(0b0000_0000) for _ in range(len(pre.validators))],
+        # Attestations
+        previous_epoch_attestations=pre.previous_epoch_attestations,
+        current_epoch_attestations=pre.current_epoch_attestations,
         # Finality
         justification_bits=pre.justification_bits,
         previous_justified_checkpoint=pre.previous_justified_checkpoint,
         current_justified_checkpoint=pre.current_justified_checkpoint,
         finalized_checkpoint=pre.finalized_checkpoint,
-        # Inactivity
-        inactivity_scores=[uint64(0) for _ in range(len(pre.validators))],
+        # Historical epoch attestations and roots
+        historical_epoch_attestations=populate_historical_epoch_attestations(pre),
+        historical_epoch_block_roots=populate_historical_epoch_block_roots(pre),
     )
     return post
 ```

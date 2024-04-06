@@ -7,24 +7,20 @@
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
-- [`beacon-chain.md` Template](#beacon-chainmd-template)
-- [Gasper-Siesta](#gasper-siesta)
-  - [Table of contents](#table-of-contents)
-  - [Introduction](#introduction)
-  - [Notation](#notation)
-  - [Custom types](#custom-types)
-  - [Constants](#constants)
-    - [Misc](#misc)
-  - [Preset](#preset)
-    - [State list lengths](#state-list-lengths)
-  - [Containers](#containers)
-    - [Beacon state](#beacon-state)
-      - [`BeaconState`](#beaconstate)
-  - [Helper functions](#helper-functions)
-    - [Epoch processing](#epoch-processing)
-      - [Justification and Finalization](#justification-and-finalization)
-        - [Helpers](#helpers)
-  - [Testing](#testing)
+- [Introduction](#introduction)
+- [Notation](#notation)
+- [Custom types](#custom-types)
+- [Constants](#constants)
+  - [Misc](#misc)
+- [Preset](#preset)
+  - [State list lengths](#state-list-lengths)
+- [Containers](#containers)
+  - [Beacon state](#beacon-state)
+    - [`BeaconState`](#beaconstate)
+- [Helper functions](#helper-functions)
+  - [Epoch processing](#epoch-processing)
+    - [Justification and Finalization](#justification-and-finalization)
+      - [Helpers](#helpers)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 <!-- /TOC -->
@@ -55,15 +51,6 @@ Gasper-Siesta aims to reduce commit latency in the Beacon Chain by modifying the
 | - | - | :-: | :-: |
 | `HISTORICAL_EPOCH_FINALITY_WINDOW` | `uint64(2**8)` (= 256) | epochs | ~27 hours |
 
-<!-- 
-## Configuration
-
-### [CATEGORY OF CONFIGURATIONS]
-
-| Name | Value |
-| - | - |
-| `<CONFIGURATION_FIELD_NAME>` | `<VALUE>` | 
--->
 
 ## Containers
 
@@ -79,11 +66,6 @@ class BeaconState(phase0.BeaconState):
 
 ## Helper functions
 
-<!-- ### [CATEGORY OF HELPERS]
-
-```python
-<PYTHON HELPER FUNCTION>
-``` -->
 
 ### Epoch processing
 
@@ -114,7 +96,7 @@ def weigh_justification_and_finalization(state: BeaconState,
     for epoch in range(state.previous_justified_checkpoint.epoch, current_epoch):
         previous_block_root = state.historical_block_roots[epoch % SLOTS_PER_HISTORICAL_ROOT]
         conflicting_stake = get_conflicting_historical_attestation_stake(state, epoch, previous_block_root)
-        # TODO: check if threshold wrong
+        # TODO: check if threshold correct
         if conflicting_stake > Gwei(0):
             break
     state.finalized_checkpoint = state.previous_justified_checkpoint
@@ -152,9 +134,7 @@ def get_total_active_balance_at_epoch(state: BeaconState, epoch: Epoch) -> Gwei:
 ```
 
 
-<!-- ### Block processing -->
-
-    
+<!-- 
 ## Testing
 
 *Note*: The function `initialize_beacon_state_from_eth1` is modified for pure <FORK_NAME> testing only.
@@ -166,4 +146,5 @@ def initialize_beacon_state_from_eth1(eth1_block_hash: Hash32,
                                       execution_payload_header: ExecutionPayloadHeader=ExecutionPayloadHeader()
                                       ) -> BeaconState:
     ...
-```
+``` 
+-->
