@@ -1,5 +1,3 @@
-# `beacon-chain.md` Template
-
 # Gasper-Siesta
 
 ## Table of contents
@@ -7,26 +5,23 @@
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
-- [`beacon-chain.md` Template](#beacon-chainmd-template)
-- [Gasper-Siesta](#gasper-siesta)
-  - [Table of contents](#table-of-contents)
-  - [Introduction](#introduction)
-  - [Notation](#notation)
-  - [Custom types](#custom-types)
-  - [Constants](#constants)
-    - [Misc](#misc)
-  - [Preset](#preset)
-    - [State list lengths](#state-list-lengths)
-  - [Containers](#containers)
-    - [Beacon state](#beacon-state)
-      - [`BeaconState`](#beaconstate)
-  - [Helper functions](#helper-functions)
-    - [Epoch processing](#epoch-processing)
-      - [Justification and Finalization](#justification-and-finalization)
-        - [Helpers](#helpers)
-    - [Block processing](#block-processing)
-      - [Operations](#operations)
-        - [Attestations](#attestations)
+- [Introduction](#introduction)
+- [Notation](#notation)
+- [Custom types](#custom-types)
+- [Constants](#constants)
+  - [Misc](#misc)
+- [Preset](#preset)
+  - [State list lengths](#state-list-lengths)
+- [Containers](#containers)
+  - [Beacon state](#beacon-state)
+    - [`BeaconState`](#beaconstate)
+- [Helper functions](#helper-functions)
+  - [Epoch processing](#epoch-processing)
+    - [Justification and Finalization](#justification-and-finalization)
+      - [Helpers](#helpers)
+  - [Block processing](#block-processing)
+    - [Operations](#operations)
+      - [Attestations](#attestations)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 <!-- /TOC -->

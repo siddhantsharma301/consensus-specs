@@ -5,22 +5,20 @@
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
-- [Gasper-Siesta -- Fork Logic](#gasper-siesta----fork-logic)
-  - [Table of contents](#table-of-contents)
-  - [Introduction](#introduction)
-  - [Configuration](#configuration)
-  - [Helper functions](#helper-functions)
-    - [Misc](#misc)
-      - [`compute_fork_version`](#compute_fork_version)
-  - [Fork to Gasper-Siesta](#fork-to-gasper-siesta)
-    - [Fork trigger](#fork-trigger)
-    - [Upgrading the state](#upgrading-the-state)
+- [Introduction](#introduction)
+- [Configuration](#configuration)
+- [Helper functions](#helper-functions)
+  - [Misc](#misc)
+    - [`compute_fork_version`](#compute_fork_version)
+- [Fork to Gasper-Siesta](#fork-to-gasper-siesta)
+  - [Fork trigger](#fork-trigger)
+  - [Upgrading the state](#upgrading-the-state)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 ## Introduction
 
-This document describes the process of the first upgrade of the beacon chain: the Altair hard fork, introducing light client support and other improvements.
+This document describes the process of the first upgrade of the beacon chain: the Gasper-Siesta hard fork, introducing light client support and other improvements.
 
 ## Configuration
 
@@ -55,7 +53,7 @@ Note that for the pure Gasper-Siesta networks, we don't apply `upgrade_to_gasper
 
 ### Upgrading the state
 
-If `state.slot % SLOTS_PER_EPOCH == 0` and `compute_epoch_at_slot(state.slot) == GASPER_SIESTA_FORK_EPOCH`, an irregular state change is made to upgrade to Altair.
+If `state.slot % SLOTS_PER_EPOCH == 0` and `compute_epoch_at_slot(state.slot) == GASPER_SIESTA_FORK_EPOCH`, an irregular state change is made to upgrade to Gasper-Siesta.
 
 The upgrade occurs after the completion of the inner loop of `process_slots` that sets `state.slot` equal to `GASPER_SISTA_FORK_EPOCH * SLOTS_PER_EPOCH`.
 Care must be taken when transitioning through the fork boundary as implementations will need a modified [state transition function](../phase0/beacon-chain.md#beacon-chain-state-transition-function) that deviates from the Phase 0 document.
