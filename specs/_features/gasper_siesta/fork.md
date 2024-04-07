@@ -107,10 +107,10 @@ def get_block_root_at_epoch(pre: BeaconState, epoch: Epoch) -> Root:
     # Calculate the slot at the end of the epoch
     epoch_end_slot = (epoch + 1) * SLOTS_PER_EPOCH - 1
     # Ensure the requested epoch is within the historical bounds
-    assert epoch <= state.current_epoch() + HISTORICAL_ROOTS_LIMIT // SLOTS_PER_EPOCH, "Requested epoch is too far in history"
+    assert epoch <= phase0.get_current_epoch(pre) + HISTORICAL_ROOTS_LIMIT // SLOTS_PER_EPOCH, "Requested epoch is too far in history"
     # Index into the state's block roots array to retrieve the block root
     block_root_index = epoch_end_slot % SLOTS_PER_HISTORICAL_ROOT
-    block_root = state.block_roots[block_root_index]
+    block_root = pre.block_roots[block_root_index]
     return block_root
 
 def populate_historical_epoch_block_roots(pre: phase0.BeaconState) -> Vector[Root, HISTORICAL_EPOCH_FINALITY_WINDOW]:
@@ -128,6 +128,8 @@ def populate_historical_epoch_block_roots(pre: phase0.BeaconState) -> Vector[Roo
         # Ensure the list is capped at the size defined by HISTORICAL_EPOCH_FINALITY_WINDOW
         # This is necessary if the number of collected block roots exceeds the storage limit.
         historical_epoch_block_roots = historical_epoch_block_roots[:HISTORICAL_EPOCH_FINALITY_WINDOW]
+    while len(historical_epoch_block_roots) < 4:
+        historical_epoch_block_roots.append(Root())
     return historical_epoch_block_roots
 
 # TODO: FIX THIS FUNCTION
