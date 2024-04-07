@@ -5,16 +5,14 @@
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
-- [Gasper-Siesta -- Fork Logic](#gasper-siesta----fork-logic)
-  - [Table of contents](#table-of-contents)
-  - [Introduction](#introduction)
-  - [Configuration](#configuration)
-  - [Helper functions](#helper-functions)
-    - [Misc](#misc)
-      - [`compute_fork_version`](#compute_fork_version)
-  - [Fork to Gasper-Siesta](#fork-to-gasper-siesta)
-    - [Fork trigger](#fork-trigger)
-    - [Upgrading the state](#upgrading-the-state)
+- [Introduction](#introduction)
+- [Configuration](#configuration)
+- [Helper functions](#helper-functions)
+  - [Misc](#misc)
+    - [`compute_fork_version`](#compute_fork_version)
+- [Fork to Gasper-Siesta](#fork-to-gasper-siesta)
+  - [Fork trigger](#fork-trigger)
+  - [Upgrading the state](#upgrading-the-state)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -62,20 +60,6 @@ Care must be taken when transitioning through the fork boundary as implementatio
 In particular, the outer `state_transition` function defined in the Phase 0 document will not expose the precise fork slot to execute the upgrade in the presence of skipped slots at the fork boundary. Instead the logic must be within `process_slots`.
 
 ```python
-def create_dummy_pending_attestation() -> PendingAttestation:
-    return PendingAttestation(
-        aggregation_bits=Bitlist[MAX_VALIDATORS_PER_COMMITTEE](),
-        data=AttestationData(
-            slot=Slot(0),
-            index=CommitteeIndex(0),
-            beacon_block_root=Root(),
-            source=Checkpoint(epoch=Epoch(0), root=Root()),
-            target=Checkpoint(epoch=Epoch(0), root=Root()),
-        ),
-        inclusion_delay=Slot(0),
-        proposer_index=ValidatorIndex(0),
-    )
-
 def populate_historical_epoch_attestations(pre: phase0.BeaconState) -> Vector[List[PendingAttestation, MAX_ATTESTATIONS], HISTORICAL_EPOCH_FINALITY_WINDOW]:
     """
     Populate the historical_epoch_attestations with attestations from the end of every epoch
@@ -97,13 +81,14 @@ def populate_historical_epoch_attestations(pre: phase0.BeaconState) -> Vector[Li
         historical_epoch_attestations.append([previous_epoch_attestations])  # Insert at the beginning
 
     # Placeholder for other epochs
-    placeholder_attestations = [create_dummy_pending_attestation()]
+    placeholder_attestations = []
     while len(historical_epoch_attestations) < HISTORICAL_EPOCH_FINALITY_WINDOW:
         historical_epoch_attestations.append(placeholder_attestations)  # Insert at the beginning to maintain chronological order
 
     return historical_epoch_attestations
 
 def get_block_root_at_epoch(pre: BeaconState, epoch: Epoch) -> Root:
+    # TODO: double check this, it might be an edge case
     # Calculate the slot at the end of the epoch
     epoch_end_slot = (epoch + 1) * SLOTS_PER_EPOCH - 1
     # Ensure the requested epoch is within the historical bounds
@@ -120,7 +105,6 @@ def populate_historical_epoch_block_roots(pre: phase0.BeaconState) -> Vector[Roo
     """
     historical_epoch_block_roots = []
     current_epoch = phase0.get_current_epoch(pre)
-    # start_epoch = max(0, current_epoch - HISTORICAL_EPOCH_FINALITY_WINDOW)
     start_epoch = current_epoch - HISTORICAL_EPOCH_FINALITY_WINDOW if current_epoch > HISTORICAL_EPOCH_FINALITY_WINDOW else 0
     for epoch in range(start_epoch, current_epoch):
         epoch_block_root = get_block_root_at_epoch(pre, epoch)
@@ -128,7 +112,7 @@ def populate_historical_epoch_block_roots(pre: phase0.BeaconState) -> Vector[Roo
         # Ensure the list is capped at the size defined by HISTORICAL_EPOCH_FINALITY_WINDOW
         # This is necessary if the number of collected block roots exceeds the storage limit.
         historical_epoch_block_roots = historical_epoch_block_roots[:HISTORICAL_EPOCH_FINALITY_WINDOW]
-    while len(historical_epoch_block_roots) < 4:
+    while len(historical_epoch_block_roots) < HISTORICAL_EPOCH_FINALITY_WINDOW:
         historical_epoch_block_roots.append(Root())
     return historical_epoch_block_roots
 
