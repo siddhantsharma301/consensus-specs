@@ -5,23 +5,23 @@
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
-- [Introduction](#introduction)
-- [Notation](#notation)
-- [Custom types](#custom-types)
-- [Constants](#constants)
-  - [Misc](#misc)
-- [Preset](#preset)
-  - [State list lengths](#state-list-lengths)
-- [Containers](#containers)
-  - [Beacon state](#beacon-state)
-    - [`BeaconState`](#beaconstate)
-- [Helper functions](#helper-functions)
-  - [Epoch processing](#epoch-processing)
-    - [Justification and Finalization](#justification-and-finalization)
-      - [Helpers](#helpers)
-  - [Block processing](#block-processing)
-    - [Operations](#operations)
-      - [Attestations](#attestations)
+- [Gasper-Siesta](#gasper-siesta)
+  - [Table of contents](#table-of-contents)
+  - [Introduction](#introduction)
+  - [Constants](#constants)
+    - [Misc](#misc)
+  - [Preset](#preset)
+    - [State list lengths](#state-list-lengths)
+  - [Containers](#containers)
+    - [Beacon state](#beacon-state)
+      - [`BeaconState`](#beaconstate)
+  - [Helper functions](#helper-functions)
+    - [Epoch processing](#epoch-processing)
+      - [Justification and Finalization](#justification-and-finalization)
+        - [Helpers](#helpers)
+    - [Block processing](#block-processing)
+      - [Operations](#operations)
+        - [Attestations](#attestations)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 <!-- /TOC -->
@@ -30,10 +30,6 @@
 
 ## Introduction
 Gasper-Siesta aims to reduce commit latency in the Beacon Chain by modifying the Casper FFG finality rule.
-
-## Notation
-
-## Custom types
 
 ## Constants
 
@@ -58,17 +54,22 @@ Gasper-Siesta aims to reduce commit latency in the Beacon Chain by modifying the
 ### Beacon state
 
 ```python
-def process_slot(state: BeaconState) -> None:
-    # Cache state root
-    previous_state_root = hash_tree_root(state)
-    state.state_roots[state.slot % SLOTS_PER_HISTORICAL_ROOT] = previous_state_root
-    # Cache latest block header state root
-    if state.latest_block_header.state_root == Bytes32():
-        state.latest_block_header.state_root = previous_state_root
-        state.historical_block_roots[state.slot % SLOTS_PER_HISTORICAL_ROOT] = previous_state_root
-    # Cache block root
-    previous_block_root = hash_tree_root(state.latest_block_header)
-    state.block_roots[state.slot % SLOTS_PER_HISTORICAL_ROOT] = previous_block_root
+def process_slots(state: BeaconState, slot: Slot) -> None:
+    assert state.slot < slot
+    while state.slot < slot:
+        process_slot(state)
+        # Process epoch on the start slot of the next epoch
+        if (state.slot + 1) % SLOTS_PER_EPOCH == 0:
+            # Adjust historical epoch block root storage for new epoch
+            block_root = hash_tree_root(state.latest_block_header)
+            state.historical_epoch_block_roots[1:] = state.historical_epoch_block_roots[:HISTORICAL_EPOCH_FINALITY_WINDOW - 1]
+            state.historical_epoch_block_roots[0] = block_root
+            # Adjust historical epoch attestations storage for new epoch
+            state.historical_epoch_attestations[1:] = state.historical_epoch_attestations[:HISTORICAL_EPOCH_FINALITY_WINDOW - 1]
+            state.historical_epoch_attestations[0] = []
+
+            process_epoch(state)
+        state.slot = Slot(state.slot + 1)
 ```
 
 
@@ -81,7 +82,6 @@ class BeaconState(phase0.BeaconState):
 ```
 
 ## Helper functions
-
 
 ### Epoch processing
 
@@ -176,32 +176,14 @@ def process_attestation(state: BeaconState, attestation: Attestation) -> None:
     if data.target.epoch == get_current_epoch(state):
         assert data.source == state.current_justified_checkpoint
         state.current_epoch_attestations.append(pending_attestation)
-        # Replace existing attestation, if any
-        # FIXME: this will overwrite if different attestations have the same epoch, but should be different indices in the overall list. How to disambiguate? We do not have a unique index from beacon state
-        state.historical_epoch_attestations[data.target.epoch % SLOTS_PER_HISTORICAL_EPOCH].append(pending_attestation)
+        assert len(state.historical_epoch_attestations[1]) < HISTORICAL_EPOCH_FINALITY_WINDOW
+        state.historical_epoch_attestations[1].append(pending_attestation)
     else:
         assert data.source == state.previous_justified_checkpoint
         state.previous_epoch_attestations.append(pending_attestation)
-        # Replace existing attestation, if any
-        # FIXME: this will overwrite if different attestations have the same epoch, but should be different indices in the overall list. How to disambiguate? We do not have a unique index from beacon state
-        state.historical_epoch_attestations[data.target.epoch % SLOTS_PER_HISTORICAL_EPOCH].append(pending_attestation)
+        assert len(state.historical_epoch_attestations[0]) < HISTORICAL_EPOCH_FINALITY_WINDOW
+        state.historical_epoch_attestations[0].append(pending_attestation)
 
     # Verify signature
     assert is_valid_indexed_attestation(state, get_indexed_attestation(state, attestation))
 ```
-
-
-<!-- 
-## Testing
-
-*Note*: The function `initialize_beacon_state_from_eth1` is modified for pure <FORK_NAME> testing only.
-
-```python
-def initialize_beacon_state_from_eth1(eth1_block_hash: Hash32,
-                                      eth1_timestamp: uint64,
-                                      deposits: Sequence[Deposit],
-                                      execution_payload_header: ExecutionPayloadHeader=ExecutionPayloadHeader()
-                                      ) -> BeaconState:
-    ...
-``` 
--->
