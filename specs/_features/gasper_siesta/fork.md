@@ -76,7 +76,7 @@ def create_dummy_pending_attestation() -> PendingAttestation:
         proposer_index=ValidatorIndex(0),
     )
 
-def populate_historical_epoch_attestations(pre: phase0.BeaconState) -> Vector[Vector[PendingAttestation, MAX_ATTESTATIONS], HISTORICAL_EPOCH_FINALITY_WINDOW]:
+def populate_historical_epoch_attestations(pre: phase0.BeaconState) -> Vector[List[PendingAttestation, MAX_ATTESTATIONS], HISTORICAL_EPOCH_FINALITY_WINDOW]:
     """
     Populate the historical_epoch_attestations with attestations from the end of every epoch
     in the pre-state container. For epochs beyond the last two, where specific attestations
@@ -120,7 +120,8 @@ def populate_historical_epoch_block_roots(pre: phase0.BeaconState) -> Vector[Roo
     """
     historical_epoch_block_roots = []
     current_epoch = phase0.get_current_epoch(pre)
-    start_epoch = max(0, current_epoch - HISTORICAL_EPOCH_FINALITY_WINDOW)
+    # start_epoch = max(0, current_epoch - HISTORICAL_EPOCH_FINALITY_WINDOW)
+    start_epoch = current_epoch - HISTORICAL_EPOCH_FINALITY_WINDOW if current_epoch > HISTORICAL_EPOCH_FINALITY_WINDOW else 0
     for epoch in range(start_epoch, current_epoch):
         epoch_block_root = get_block_root_at_epoch(pre, epoch)
         historical_epoch_block_roots.append(epoch_block_root)
