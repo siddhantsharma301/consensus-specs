@@ -20,6 +20,7 @@
   - [Block processing](#block-processing)
     - [Operations](#operations)
       - [Attestations](#attestations)
+- [Testing](#testing)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 <!-- /TOC -->
@@ -184,4 +185,22 @@ def process_attestation(state: BeaconState, attestation: Attestation) -> None:
 
     # Verify signature
     assert is_valid_indexed_attestation(state, get_indexed_attestation(state, attestation))
+```
+
+## Testing
+
+```python
+def initialize_beacon_state_from_eth1(eth1_block_hash: Hash32,
+                                      eth1_timestamp: uint64,
+                                      deposits: Sequence[Deposit]
+                                      ) -> BeaconState:
+    state_phase0 = phase0.initialize_beacon_state_from_eth1(
+        eth1_block_hash,
+        eth1_timestamp,
+        deposits,
+    )
+    state = upgrade_to_gasper_siesta(state_phase0)
+    state.fork.previous_version = GASPER_SIESTA_FORK_VERSION
+    state.fork.current_version = GASPER_SIESTA_FORK_VERSION
+    return state
 ```
