@@ -5,14 +5,16 @@
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
-- [Introduction](#introduction)
-- [Configuration](#configuration)
-- [Helper functions](#helper-functions)
-  - [Misc](#misc)
-    - [`compute_fork_version`](#compute_fork_version)
-- [Fork to Gasper-Siesta](#fork-to-gasper-siesta)
-  - [Fork trigger](#fork-trigger)
-  - [Upgrading the state](#upgrading-the-state)
+- [Gasper-Siesta -- Fork Logic](#gasper-siesta----fork-logic)
+  - [Table of contents](#table-of-contents)
+  - [Introduction](#introduction)
+  - [Configuration](#configuration)
+  - [Helper functions](#helper-functions)
+    - [Misc](#misc)
+      - [`compute_fork_version`](#compute_fork_version)
+  - [Fork to Gasper-Siesta](#fork-to-gasper-siesta)
+    - [Fork trigger](#fork-trigger)
+    - [Upgrading the state](#upgrading-the-state)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -98,7 +100,7 @@ def get_block_root_at_epoch(pre: BeaconState, epoch: Epoch) -> Root:
     block_root = state.block_roots[block_root_index]
     return block_root
 
-def populate_historical_epoch_block_roots(pre: phase0.BeaconState) -> List[Root]:
+def populate_historical_epoch_block_roots(pre: phase0.BeaconState) -> Vector[Root, HISTORICAL_EPOCH_FINALITY_WINDOW]:
     """
     Populate the historical_epoch_block_roots with block roots from the end of every epoch
     in the pre-state container.
