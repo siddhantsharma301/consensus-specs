@@ -62,6 +62,20 @@ Care must be taken when transitioning through the fork boundary as implementatio
 In particular, the outer `state_transition` function defined in the Phase 0 document will not expose the precise fork slot to execute the upgrade in the presence of skipped slots at the fork boundary. Instead the logic must be within `process_slots`.
 
 ```python
+def create_dummy_pending_attestation() -> PendingAttestation:
+    return PendingAttestation(
+        aggregation_bits=Bitlist[MAX_VALIDATORS_PER_COMMITTEE](),
+        data=AttestationData(
+            slot=Slot(0),
+            index=CommitteeIndex(0),
+            beacon_block_root=Root(),
+            source=Checkpoint(epoch=Epoch(0), root=Root()),
+            target=Checkpoint(epoch=Epoch(0), root=Root()),
+        ),
+        inclusion_delay=Slot(0),
+        proposer_index=ValidatorIndex(0),
+    )
+
 def populate_historical_epoch_attestations(pre: phase0.BeaconState) -> Vector[Vector[PendingAttestation, MAX_ATTESTATIONS], HISTORICAL_EPOCH_FINALITY_WINDOW]:
     """
     Populate the historical_epoch_attestations with attestations from the end of every epoch
@@ -73,22 +87,21 @@ def populate_historical_epoch_attestations(pre: phase0.BeaconState) -> Vector[Ve
     previous_epoch = phase0.get_previous_epoch(pre)
 
     # Populate for the last two epochs with actual data
-    if previous_epoch > 0 and previous_epoch != current_epoch:
-        previous_epoch_attestations = get_matching_target_attestations(pre, previous_epoch)
-        assert len(previous_epoch_attestations) <= MAX_ATTESTATIONS, "Exceeded MAX_ATTESTATIONS for previous epoch"
-        historical_epoch_attestations.insert(0, Vector(previous_epoch_attestations, MAX_ATTESTATIONS))  # Insert at the beginning
-
     if current_epoch > 0:
         current_epoch_attestations = get_matching_target_attestations(pre, current_epoch)
         assert len(current_epoch_attestations) <= MAX_ATTESTATIONS, "Exceeded MAX_ATTESTATIONS for current epoch"
-        historical_epoch_attestations.append(Vector(current_epoch_attestations, MAX_ATTESTATIONS))
+        historical_epoch_attestations.append([current_epoch_attestations])
+    if previous_epoch > 0 and previous_epoch != current_epoch:
+        previous_epoch_attestations = get_matching_target_attestations(pre, previous_epoch)
+        assert len(previous_epoch_attestations) <= MAX_ATTESTATIONS, "Exceeded MAX_ATTESTATIONS for previous epoch"
+        historical_epoch_attestations.append([previous_epoch_attestations])  # Insert at the beginning
 
     # Placeholder for other epochs
-    placeholder_attestations = Vector([], MAX_ATTESTATIONS)
+    placeholder_attestations = [create_dummy_pending_attestation()]
     while len(historical_epoch_attestations) < HISTORICAL_EPOCH_FINALITY_WINDOW:
-        historical_epoch_attestations.insert(0, placeholder_attestations)  # Insert at the beginning to maintain chronological order
+        historical_epoch_attestations.append(placeholder_attestations)  # Insert at the beginning to maintain chronological order
 
-    return Vector(historical_epoch_attestations, HISTORICAL_EPOCH_FINALITY_WINDOW)
+    return historical_epoch_attestations
 
 def get_block_root_at_epoch(pre: BeaconState, epoch: Epoch) -> Root:
     # Calculate the slot at the end of the epoch
