@@ -60,7 +60,7 @@ Care must be taken when transitioning through the fork boundary as implementatio
 In particular, the outer `state_transition` function defined in the Phase 0 document will not expose the precise fork slot to execute the upgrade in the presence of skipped slots at the fork boundary. Instead the logic must be within `process_slots`.
 
 ```python
-def populate_historical_epoch_attestations(pre: phase0.BeaconState) -> Vector[Vector[Attestation, MAX_ATTESTATIONS], HISTORICAL_EPOCH_FINALITY_WINDOW]:
+def populate_historical_epoch_attestations(pre: phase0.BeaconState) -> Vector[Vector[PendingAttestation, MAX_ATTESTATIONS], HISTORICAL_EPOCH_FINALITY_WINDOW]:
     """
     Populate the historical_epoch_attestations with attestations from the end of every epoch
     in the pre-state container. For epochs beyond the last two, where specific attestations
