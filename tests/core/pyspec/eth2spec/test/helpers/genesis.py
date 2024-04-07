@@ -7,6 +7,7 @@ from eth2spec.test.helpers.execution_payload import (
 )
 from eth2spec.test.helpers.forks import (
     is_post_altair, is_post_bellatrix, is_post_capella, is_post_eip6110, is_post_eip7002, is_post_whisk,
+    is_post_gasper_siesta,
 )
 from eth2spec.test.helpers.keys import pubkeys
 from eth2spec.test.helpers.whisk import compute_whisk_initial_tracker_cached, compute_whisk_initial_k_commitment_cached
@@ -117,6 +118,9 @@ def create_genesis_state(spec, validator_balances, activation_threshold):
             state.previous_epoch_participation.append(spec.ParticipationFlags(0b0000_0000))
             state.current_epoch_participation.append(spec.ParticipationFlags(0b0000_0000))
             state.inactivity_scores.append(spec.uint64(0))
+        if is_post_gasper_siesta(spec):
+            state.historical_epoch_attestations.append([])
+            state.historical_epoch_block_roots = []
 
     # Set genesis validators root for domain separation and chain versioning
     state.genesis_validators_root = spec.hash_tree_root(state.validators)
