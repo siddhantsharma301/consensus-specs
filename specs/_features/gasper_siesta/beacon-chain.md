@@ -5,22 +5,24 @@
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
-- [Introduction](#introduction)
-- [Constants](#constants)
-  - [Misc](#misc)
-- [Preset](#preset)
-  - [State list lengths](#state-list-lengths)
-- [Containers](#containers)
-  - [Beacon state](#beacon-state)
-    - [`BeaconState`](#beaconstate)
-- [Helper functions](#helper-functions)
-  - [Epoch processing](#epoch-processing)
-    - [Justification and Finalization](#justification-and-finalization)
-      - [Helpers](#helpers)
-  - [Block processing](#block-processing)
-    - [Operations](#operations)
-      - [Attestations](#attestations)
-- [Testing](#testing)
+- [Gasper-Siesta](#gasper-siesta)
+  - [Table of contents](#table-of-contents)
+  - [Introduction](#introduction)
+  - [Constants](#constants)
+    - [Misc](#misc)
+  - [Preset](#preset)
+    - [State list lengths](#state-list-lengths)
+  - [Containers](#containers)
+    - [Beacon state](#beacon-state)
+      - [`BeaconState`](#beaconstate)
+  - [Helper functions](#helper-functions)
+    - [Epoch processing](#epoch-processing)
+      - [Justification and Finalization](#justification-and-finalization)
+        - [Helpers](#helpers)
+    - [Block processing](#block-processing)
+      - [Operations](#operations)
+        - [Attestations](#attestations)
+  - [Testing](#testing)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 <!-- /TOC -->
@@ -76,7 +78,7 @@ def process_slots(state: BeaconState, slot: Slot) -> None:
 
 ```python
 class BeaconState(phase0.BeaconState):
-    historical_epoch_attestations: Vector[List[PendingAttestation, MAX_ATTESTATIONS], HISTORICAL_EPOCH_FINALITY_WINDOW]
+    historical_epoch_attestations: Vector[List[PendingAttestation, MAX_ATTESTATIONS * SLOTS_PER_EPOCH], HISTORICAL_EPOCH_FINALITY_WINDOW]
     historical_epoch_block_roots: Vector[Root, HISTORICAL_EPOCH_FINALITY_WINDOW]
 ```
 
