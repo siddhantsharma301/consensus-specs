@@ -51,8 +51,9 @@ def run_attestation_processing(spec, state, attestation, valid=True):
     yield 'post', state
 
 
-def build_attestation_data(spec, state, slot, index, beacon_block_root=None, shard=None):
+def build_attestation_data(spec, state, slot, index, beacon_block_root=None, shard=None, source_epoch=None, source_root=None, target_epoch=None, epoch_boundary_root=None):
     assert state.slot >= slot
+    assert (source_root != None and source_epoch != None) or (source_root == None and source_epoch == None)
 
     if beacon_block_root is not None:
         pass
@@ -62,26 +63,31 @@ def build_attestation_data(spec, state, slot, index, beacon_block_root=None, sha
         beacon_block_root = spec.get_block_root_at_slot(state, slot)
 
     current_epoch_start_slot = spec.compute_start_slot_at_epoch(spec.get_current_epoch(state))
-    if slot < current_epoch_start_slot:
-        epoch_boundary_root = spec.get_block_root(state, spec.get_previous_epoch(state))
-    elif slot == current_epoch_start_slot:
-        epoch_boundary_root = beacon_block_root
-    else:
-        epoch_boundary_root = spec.get_block_root(state, spec.get_current_epoch(state))
+    if epoch_boundary_root == None:
+        if slot < current_epoch_start_slot:
+            epoch_boundary_root = spec.get_block_root(state, spec.get_previous_epoch(state))
+        elif slot == current_epoch_start_slot:
+            epoch_boundary_root = beacon_block_root
+        else:
+            epoch_boundary_root = spec.get_block_root(state, spec.get_current_epoch(state))
 
-    if slot < current_epoch_start_slot:
-        source_epoch = state.previous_justified_checkpoint.epoch
-        source_root = state.previous_justified_checkpoint.root
-    else:
-        source_epoch = state.current_justified_checkpoint.epoch
-        source_root = state.current_justified_checkpoint.root
+    if source_epoch != None:
+        if slot < current_epoch_start_slot:
+            source_epoch = state.previous_justified_checkpoint.epoch
+            source_root = state.previous_justified_checkpoint.root
+        else:
+            source_epoch = state.current_justified_checkpoint.epoch
+            source_root = state.current_justified_checkpoint.root
+
+    if target_epoch is None:
+        target_epoch = spec.compute_epoch_at_slot(slot)
 
     data = spec.AttestationData(
         slot=slot,
         index=index,
         beacon_block_root=beacon_block_root,
         source=spec.Checkpoint(epoch=source_epoch, root=source_root),
-        target=spec.Checkpoint(epoch=spec.compute_epoch_at_slot(slot), root=epoch_boundary_root),
+        target=spec.Checkpoint(epoch=target_epoch, root=epoch_boundary_root),
     )
 
     # if spec.fork == SHARDING  # TODO: add extra data for shard voting
@@ -117,6 +123,48 @@ def get_valid_attestation(spec,
 
     return attestation
 
+def get_valid_attestation_at_source_target(spec, 
+                                            state, 
+                                            slot=None, 
+                                            index=None, 
+                                            source_epoch=None,
+                                            target_epoch=None,
+                                            source_root=None,
+                                            target_root=None,
+                                            filter_participant_set=None, 
+                                            beacon_block_root=None, 
+                                            signed=False):
+    # If filter_participant_set filters everything, the attestation has 0 participants, and cannot be signed.
+    # Thus strictly speaking invalid when no participant is added later.
+    if slot is None:
+        slot = state.slot
+    if index is None:
+        index = 0
+
+    attestation_data = build_attestation_data(
+        spec, 
+        state, 
+        slot=slot,
+        index=index, 
+        beacon_block_root=beacon_block_root, 
+        source_epoch=source_epoch, 
+        source_root=source_root, 
+        target_epoch=target_epoch, 
+        epoch_boundary_root=target_root
+    )
+
+    beacon_committee = spec.get_beacon_committee(state, slot, index)
+
+    committee_size = len(beacon_committee)
+    aggregation_bits = Bitlist[spec.MAX_VALIDATORS_PER_COMMITTEE](*([0] * committee_size))
+    attestation = spec.Attestation(
+        aggregation_bits=aggregation_bits,
+        data=attestation_data,
+    )
+    # fill the attestation with (optionally filtered) participants, and optionally sign it
+    fill_aggregate_attestation(spec, state, attestation, signed=signed, filter_participant_set=filter_participant_set)
+
+    return attestation
 
 def sign_aggregate_attestation(spec, state, attestation_data, participants: List[int]):
     signatures = []
