@@ -116,7 +116,6 @@ def populate_historical_epoch_block_roots(pre: phase0.BeaconState) -> Vector[Roo
         historical_epoch_block_roots.append(Root())
     return historical_epoch_block_roots
 
-# TODO: FIX THIS FUNCTION
 def upgrade_to_gasper_siesta(pre: phase0.BeaconState) -> BeaconState:
     epoch = phase0.get_current_epoch(pre)
     post = BeaconState(
