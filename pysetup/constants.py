@@ -9,6 +9,7 @@ EIP7002 = 'eip7002'
 EIP7549 = 'eip7549'
 WHISK = 'whisk'
 EIP7594 = 'eip7594'
+GASPER_SIESTA = 'gasper_siesta'
 
 
 

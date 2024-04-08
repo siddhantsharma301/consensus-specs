@@ -8,6 +8,7 @@ from .eip7002 import EIP7002SpecBuilder
 from .eip7549 import EIP7549SpecBuilder
 from .whisk import WhiskSpecBuilder
 from .eip7594 import EIP7594SpecBuilder
+from .gasper_siesta import GasperSiestaSpecBuilder
 
 
 spec_builders = {
@@ -15,5 +16,6 @@ spec_builders = {
     for builder in (
         Phase0SpecBuilder, AltairSpecBuilder, BellatrixSpecBuilder, CapellaSpecBuilder, DenebSpecBuilder,
         EIP6110SpecBuilder, EIP7002SpecBuilder, EIP7549SpecBuilder, WhiskSpecBuilder, EIP7594SpecBuilder,
+        GasperSiestaSpecBuilder,
     )
 }

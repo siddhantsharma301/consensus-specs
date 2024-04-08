@@ -26,6 +26,7 @@ tests/core/pyspec/eth2spec/eip7002/
 tests/core/pyspec/eth2spec/eip7549/
 tests/core/pyspec/eth2spec/whisk/
 tests/core/pyspec/eth2spec/eip7594/
+tests/core/pyspec/eth2spec/gasper_siesta/
 
 # coverage reports
 .htmlcov
