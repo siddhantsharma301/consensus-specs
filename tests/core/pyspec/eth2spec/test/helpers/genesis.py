@@ -119,7 +119,7 @@ def create_genesis_state(spec, validator_balances, activation_threshold):
             state.current_epoch_participation.append(spec.ParticipationFlags(0b0000_0000))
             state.inactivity_scores.append(spec.uint64(0))
         if is_post_gasper_siesta(spec):
-            state.historical_epoch_attestations.append([])
+            state.historical_epoch_attestations = []
             state.historical_epoch_block_roots = []
 
     # Set genesis validators root for domain separation and chain versioning
