@@ -5,22 +5,24 @@
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
-- [Introduction](#introduction)
-- [Constants](#constants)
-  - [Misc](#misc)
-- [Preset](#preset)
-  - [State list lengths](#state-list-lengths)
-- [Containers](#containers)
-  - [Beacon state](#beacon-state)
-    - [`BeaconState`](#beaconstate)
-- [Helper functions](#helper-functions)
-  - [Epoch processing](#epoch-processing)
-    - [Justification and Finalization](#justification-and-finalization)
-      - [Helpers](#helpers)
-  - [Block processing](#block-processing)
-    - [Operations](#operations)
-      - [Attestations](#attestations)
-- [Testing](#testing)
+- [Gasper-Siesta](#gasper-siesta)
+  - [Table of contents](#table-of-contents)
+  - [Introduction](#introduction)
+  - [Constants](#constants)
+    - [Misc](#misc)
+  - [Preset](#preset)
+    - [State list lengths](#state-list-lengths)
+  - [Containers](#containers)
+    - [Beacon state](#beacon-state)
+      - [`BeaconState`](#beaconstate)
+  - [Helper functions](#helper-functions)
+    - [Epoch processing](#epoch-processing)
+      - [Justification and Finalization](#justification-and-finalization)
+        - [Helpers](#helpers)
+    - [Block processing](#block-processing)
+      - [Operations](#operations)
+        - [Attestations](#attestations)
+  - [Testing](#testing)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 <!-- /TOC -->
@@ -175,13 +177,13 @@ def process_attestation(state: BeaconState, attestation: Attestation) -> None:
     if data.target.epoch == get_current_epoch(state):
         assert data.source == state.current_justified_checkpoint
         state.current_epoch_attestations.append(pending_attestation)
-        assert len(state.historical_epoch_attestations[1]) < HISTORICAL_EPOCH_FINALITY_WINDOW
-        state.historical_epoch_attestations[1].append(pending_attestation)
+        assert len(state.historical_epoch_attestations[0]) < HISTORICAL_EPOCH_FINALITY_WINDOW
+        state.historical_epoch_attestations[0].append(pending_attestation)
     else:
         assert data.source == state.previous_justified_checkpoint
         state.previous_epoch_attestations.append(pending_attestation)
-        assert len(state.historical_epoch_attestations[0]) < HISTORICAL_EPOCH_FINALITY_WINDOW
-        state.historical_epoch_attestations[0].append(pending_attestation)
+        assert len(state.historical_epoch_attestations[1]) < HISTORICAL_EPOCH_FINALITY_WINDOW
+        state.historical_epoch_attestations[1].append(pending_attestation)
 
     # Verify signature
     assert is_valid_indexed_attestation(state, get_indexed_attestation(state, attestation))

@@ -45,8 +45,10 @@ def test_one_basic_attestation_source_target(spec, state):
     attestation = get_valid_attestation_at_source_target(spec, state, source_epoch=0, target_epoch=0, source_root=source_root, target_root=target_root, signed=True)
     print("Attestation is : ", attestation)
     next_slots(spec, state, spec.MIN_ATTESTATION_INCLUSION_DELAY)
+    
+    yield from run_attestation_processing(spec, state, attestation)
+
     print("State after slot is: ", state.slot)
     print("State historical epoch attestations is: ", state.historical_epoch_attestations)
     print("State current block roots is: ", state.block_roots)
 
-    yield from run_attestation_processing(spec, state, attestation)
