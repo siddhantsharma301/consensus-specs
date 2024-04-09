@@ -51,6 +51,7 @@ def run_attestation_processing(spec, state, attestation, valid=True):
     yield 'post', state
 
 
+# TODO: Fix this for gasper-siesta diff!!
 def build_attestation_data(spec, state, slot, index, beacon_block_root=None, shard=None, source_epoch=None, source_root=None, target_epoch=None, epoch_boundary_root=None):
     assert state.slot >= slot
     assert (source_root != None and source_epoch != None) or (source_root == None and source_epoch == None)
