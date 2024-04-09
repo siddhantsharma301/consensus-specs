@@ -119,11 +119,13 @@ def weigh_justification_and_finalization(state: BeaconState,
 
 ##### Helpers
 ```python
-def get_matching_historical_target_attestations(state: BeaconState, epoch: Epoch, block_root: Root) -> Sequence[Attestation]:
-    return [
-        a for a in state.historical_attestations 
-        if a.data.target.root == block_root and a.data.target.epoch == epoch
-    ]
+def get_matching_historical_target_attestations(state: BeaconState, epoch: Epoch, block_root: Root) -> Sequence[Sequence[Attestation]]:
+    matching_attestations = []
+    for attestation_list in state.historical_epoch_attestations:
+        matching_attestations_for_epoch = [a for a in attestation_list if a.data.target.root == block_root and a.data.target.epoch == epoch]
+        if matching_attestations_for_epoch:
+            matching_attestations.append(matching_attestations_for_epoch)
+    return matching_attestations
 ```
 
 ```python
@@ -132,11 +134,12 @@ def get_conflicting_historical_attestation_stake(state: BeaconState, epoch: Epoc
     Return the total stake of validators that made conflicting attestations for the given epoch and block root.
     """ 
     conflict_stake = Gwei(0)
-    for attestation in state.historical_attestations:
-        if attestation.data.target.epoch == epoch and attestation.data.target.root != block_root:
-            for index in get_attesting_indices(state, attestation):
-                # TODO: Check if we can check historical effective balance
-                conflicting_stake += state.validators[index].effective_balance
+    for attestation_list in state.historical_epoch_attestations:
+        for attestation in attestation_list:
+            if attestation.data.target.epoch == epoch and attestation.data.target.root != block_root:
+                for index in get_attesting_indices(state, attestation):
+                    # TODO: Check if we can check historical effective balance
+                    conflicting_stake += state.validators[index].historical_effective
     return conflicting_stake
 ```
 
