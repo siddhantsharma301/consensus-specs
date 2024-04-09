@@ -11,6 +11,8 @@
 - [Preset](#preset)
   - [State list lengths](#state-list-lengths)
 - [Containers](#containers)
+  - [Beacon operations](#beacon-operations)
+    - [`Attestation`](#attestation)
   - [Beacon state](#beacon-state)
     - [`BeaconState`](#beaconstate)
 - [Helper functions](#helper-functions)
@@ -50,6 +52,15 @@ Gasper-Siesta aims to reduce commit latency in the Beacon Chain by modifying the
 
 ## Containers
 
+### Beacon operations
+
+#### `Attestation`
+
+```python
+class Attestation(phase0.Attestation):
+    justification_chain_block_roots: List[Root, HISTORICAL_EPOCH_FINALITY_WINDOW]
+```
+
 ### Beacon state
 
 ```python
@@ -76,7 +87,7 @@ def process_slots(state: BeaconState, slot: Slot) -> None:
 
 ```python
 class BeaconState(phase0.BeaconState):
-    historical_epoch_attestations: Vector[List[PendingAttestation, MAX_ATTESTATIONS * SLOTS_PER_EPOCH], HISTORICAL_EPOCH_FINALITY_WINDOW]
+    historical_epoch_attestations: Vector[List[Attestation, MAX_ATTESTATIONS * SLOTS_PER_EPOCH], HISTORICAL_EPOCH_FINALITY_WINDOW]
     historical_epoch_block_roots: Vector[Root, HISTORICAL_EPOCH_FINALITY_WINDOW]
 ```
 
@@ -179,12 +190,13 @@ def process_attestation(state: BeaconState, attestation: Attestation) -> None:
         assert data.source == state.current_justified_checkpoint
         state.current_epoch_attestations.append(pending_attestation)
         assert len(state.historical_epoch_attestations[0]) < HISTORICAL_EPOCH_FINALITY_WINDOW
-        state.historical_epoch_attestations[0].append(pending_attestation)
+        state.historical_epoch_attestations[0].append(attestation)
     else:
         assert data.source == state.previous_justified_checkpoint
         state.previous_epoch_attestations.append(pending_attestation)
         assert len(state.historical_epoch_attestations[1]) < HISTORICAL_EPOCH_FINALITY_WINDOW
-        state.historical_epoch_attestations[1].append(pending_attestation)
+        state.historical_epoch_attestations[1].append(attestation)
+    
 
     # Verify signature
     assert is_valid_indexed_attestation(state, get_indexed_attestation(state, attestation))
