@@ -72,7 +72,7 @@ def build_attestation_data(spec, state, slot, index, beacon_block_root=None, sha
         else:
             epoch_boundary_root = spec.get_block_root(state, spec.get_current_epoch(state))
 
-    if source_epoch != None:
+    if source_epoch == None:
         if slot < current_epoch_start_slot:
             source_epoch = state.previous_justified_checkpoint.epoch
             source_root = state.previous_justified_checkpoint.root
