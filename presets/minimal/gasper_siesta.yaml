@@ -1,0 +1,9 @@
+# Minimal preset - Gasper-Siesta
+
+# Misc
+# ---------------------------------------------------------------
+JUSTIFICATION_BITS_LENGTH: 4
+
+# State list lengths
+# ---------------------------------------------------------------
+HISTORICAL_EPOCH_FINALITY_WINDOW: 4

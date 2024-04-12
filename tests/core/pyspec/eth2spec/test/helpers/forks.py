@@ -1,6 +1,6 @@
 from .constants import (
     PHASE0, ALTAIR, BELLATRIX, CAPELLA, DENEB,
-    EIP6110, EIP7002, WHISK,
+    EIP6110, EIP7002, WHISK, GASPER_SIESTA,
     PREVIOUS_FORK_OF,
 )
 
@@ -48,6 +48,8 @@ def is_post_eip7002(spec):
 def is_post_whisk(spec):
     return is_post_fork(spec.fork, WHISK)
 
+def is_post_gasper_siesta(spec):
+    return is_post_fork(spec.fork, GASPER_SIESTA)
 
 def get_spec_for_fork_version(spec, fork_version, phases):
     if phases is None:

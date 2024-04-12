@@ -1,0 +1,9 @@
+# Mainnet preset - Gasper-Siesta
+
+# Misc
+# ---------------------------------------------------------------
+JUSTIFICATION_BITS_LENGTH: 256
+
+# State list lengths
+# ---------------------------------------------------------------
+HISTORICAL_EPOCH_FINALITY_WINDOW: 256

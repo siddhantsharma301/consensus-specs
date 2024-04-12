@@ -148,5 +148,9 @@ def create_genesis_state(spec, validator_balances, activation_threshold):
 
         for i in range(spec.WHISK_PROPOSER_TRACKERS_COUNT):
             state.whisk_proposer_trackers[i] = compute_whisk_initial_tracker_cached(i % vc)
+    
+    if is_post_gasper_siesta(spec):
+        state.historical_attestations = []
+        state.historical_chain = []
 
     return state
