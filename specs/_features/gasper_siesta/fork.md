@@ -5,16 +5,14 @@
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
-- [Gasper-Siesta -- Fork Logic](#gasper-siesta----fork-logic)
-  - [Table of contents](#table-of-contents)
-  - [Introduction](#introduction)
-  - [Configuration](#configuration)
-  - [Helper functions](#helper-functions)
-    - [Misc](#misc)
-      - [`compute_fork_version`](#compute_fork_version)
-  - [Fork to Gasper-Siesta](#fork-to-gasper-siesta)
-    - [Fork trigger](#fork-trigger)
-    - [Upgrading the state](#upgrading-the-state)
+- [Introduction](#introduction)
+- [Configuration](#configuration)
+- [Helper functions](#helper-functions)
+  - [Misc](#misc)
+    - [`compute_fork_version`](#compute_fork_version)
+- [Fork to Gasper-Siesta](#fork-to-gasper-siesta)
+  - [Fork trigger](#fork-trigger)
+  - [Upgrading the state](#upgrading-the-state)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 

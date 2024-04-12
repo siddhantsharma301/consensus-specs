@@ -5,6 +5,27 @@
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
+- [Introduction](#introduction)
+- [Constants](#constants)
+  - [Misc](#misc)
+- [Preset](#preset)
+  - [State list lengths](#state-list-lengths)
+- [Containers](#containers)
+  - [Misc dependencies](#misc-dependencies)
+    - [`ChainHistory`](#chainhistory)
+  - [Beacon operations](#beacon-operations)
+    - [`Attestation`](#attestation)
+  - [Beacon state](#beacon-state)
+    - [`BeaconState`](#beaconstate)
+- [Helper functions](#helper-functions)
+  - [Epoch processing](#epoch-processing)
+    - [Justification and Finalization](#justification-and-finalization)
+      - [Helpers](#helpers)
+  - [Block processing](#block-processing)
+    - [Operations](#operations)
+      - [Attestations](#attestations)
+- [Testing](#testing)
+
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 <!-- /TOC -->
 
