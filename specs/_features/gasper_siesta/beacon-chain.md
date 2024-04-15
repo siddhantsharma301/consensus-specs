@@ -5,22 +5,28 @@
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
-- [Introduction](#introduction)
-- [Constants](#constants)
-  - [Misc](#misc)
-- [Preset](#preset)
-  - [State list lengths](#state-list-lengths)
-- [Containers](#containers)
-  - [Beacon state](#beacon-state)
-    - [`BeaconState`](#beaconstate)
-- [Helper functions](#helper-functions)
-  - [Epoch processing](#epoch-processing)
-    - [Justification and Finalization](#justification-and-finalization)
-      - [Helpers](#helpers)
-  - [Block processing](#block-processing)
-    - [Operations](#operations)
-      - [Attestations](#attestations)
-- [Testing](#testing)
+- [Gasper-Siesta](#gasper-siesta)
+  - [Table of contents](#table-of-contents)
+  - [Introduction](#introduction)
+  - [Constants](#constants)
+    - [Misc](#misc)
+  - [Preset](#preset)
+    - [State list lengths](#state-list-lengths)
+  - [Containers](#containers)
+    - [Misc dependencies](#misc-dependencies)
+      - [`ChainHistory`](#chainhistory)
+    - [Beacon operations](#beacon-operations)
+      - [`Attestation`](#attestation)
+    - [Beacon state](#beacon-state)
+      - [`BeaconState`](#beaconstate)
+  - [Helper functions](#helper-functions)
+    - [Epoch processing](#epoch-processing)
+      - [Justification and Finalization](#justification-and-finalization)
+        - [Helpers](#helpers)
+    - [Block processing](#block-processing)
+      - [Operations](#operations)
+        - [Attestations](#attestations)
+  - [Testing](#testing)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 <!-- /TOC -->
@@ -50,25 +56,42 @@ Gasper-Siesta aims to reduce commit latency in the Beacon Chain by modifying the
 
 ## Containers
 
+### Misc dependencies
+
+#### `ChainHistory`
+```python
+class ChainHistory(Container):
+    block_root: Root
+    parent_root: Root
+    slot: Slot
+    parent_slot: Slot
+```
+NOTE: We consider a `ChainHistory` object to be empty if the `block_root` or `parent_root` is the zero hash.
+
+
+### Beacon operations
+
+#### `Attestation`
+
+```python
+class Attestation(phase0.Attestation):
+    # Store the chain of block roots that were used to construct this attestation
+    justification_chain: Vector[ChainHistory, SLOTS_PER_EPOCH * HISTORICAL_EPOCH_FINALITY_WINDOW]
+```
+
 ### Beacon state
 
 ```python
-def process_slots(state: BeaconState, slot: Slot) -> None:
-    assert state.slot < slot
-    while state.slot < slot:
-        process_slot(state)
-        # Process epoch on the start slot of the next epoch
-        if (state.slot + 1) % SLOTS_PER_EPOCH == 0:
-            # Adjust historical epoch block root storage for new epoch
-            block_root = hash_tree_root(state.latest_block_header)
-            state.historical_epoch_block_roots[1:] = state.historical_epoch_block_roots[:HISTORICAL_EPOCH_FINALITY_WINDOW - 1]
-            state.historical_epoch_block_roots[0] = block_root
-            # Adjust historical epoch attestations storage for new epoch
-            state.historical_epoch_attestations[1:] = state.historical_epoch_attestations[:HISTORICAL_EPOCH_FINALITY_WINDOW - 1]
-            state.historical_epoch_attestations[0] = []
-
-            process_epoch(state)
-        state.slot = Slot(state.slot + 1)
+def process_slot(state: BeaconState) -> None:
+    # Cache state root
+    previous_state_root = hash_tree_root(state)
+    state.state_roots[state.slot % SLOTS_PER_HISTORICAL_ROOT] = previous_state_root
+    # Cache latest block header state root
+    if state.latest_block_header.state_root == Bytes32():
+        state.latest_block_header.state_root = previous_state_root
+    # Cache block root
+    previous_block_root = hash_tree_root(state.latest_block_header)
+    state.block_roots[state.slot % SLOTS_PER_HISTORICAL_ROOT] = previous_block_root
 ```
 
 
@@ -76,8 +99,10 @@ def process_slots(state: BeaconState, slot: Slot) -> None:
 
 ```python
 class BeaconState(phase0.BeaconState):
-    historical_epoch_attestations: Vector[List[PendingAttestation, MAX_ATTESTATIONS], HISTORICAL_EPOCH_FINALITY_WINDOW]
-    historical_epoch_block_roots: Vector[Root, HISTORICAL_EPOCH_FINALITY_WINDOW]
+    # Store historical `Attestation` across all slots
+    historical_attestations: Vector[List[Attestation, MAX_ATTESTATIONS], SLOTS_PER_EPOCH * HISTORICAL_EPOCH_FINALITY_WINDOW]
+    # Store a `ChainHistory` container per slot for each epoch in our finality window
+    historical_chain: Vector[ChainHistory, SLOTS_PER_EPOCH * HISTORICAL_EPOCH_FINALITY_WINDOW]
 ```
 
 ## Helper functions
@@ -119,11 +144,13 @@ def weigh_justification_and_finalization(state: BeaconState,
 
 ##### Helpers
 ```python
-def get_matching_historical_target_attestations(state: BeaconState, epoch: Epoch, block_root: Root) -> Sequence[Attestation]:
-    return [
-        a for a in state.historical_attestations 
-        if a.data.target.root == block_root and a.data.target.epoch == epoch
-    ]
+def get_matching_historical_target_attestations(state: BeaconState, epoch: Epoch, block_root: Root) -> Sequence[Sequence[Attestation]]:
+    matching_attestations = []
+    for attestation_list in state.historical_epoch_attestations:
+        matching_attestations_for_epoch = [a for a in attestation_list if a.data.target.root == block_root and a.data.target.epoch == epoch]
+        if matching_attestations_for_epoch:
+            matching_attestations.append(matching_attestations_for_epoch)
+    return matching_attestations
 ```
 
 ```python
@@ -132,11 +159,12 @@ def get_conflicting_historical_attestation_stake(state: BeaconState, epoch: Epoc
     Return the total stake of validators that made conflicting attestations for the given epoch and block root.
     """ 
     conflict_stake = Gwei(0)
-    for attestation in state.historical_attestations:
-        if attestation.data.target.epoch == epoch and attestation.data.target.root != block_root:
-            for index in get_attesting_indices(state, attestation):
-                # TODO: Check if we can check historical effective balance
-                conflicting_stake += state.validators[index].effective_balance
+    for attestation_list in state.historical_epoch_attestations:
+        for attestation in attestation_list:
+            if attestation.data.target.epoch == epoch and attestation.data.target.root != block_root:
+                for index in get_attesting_indices(state, attestation):
+                    # TODO: Check if we can check historical effective balance
+                    conflicting_stake += state.validators[index].historical_effective
     return conflicting_stake
 ```
 
@@ -175,13 +203,13 @@ def process_attestation(state: BeaconState, attestation: Attestation) -> None:
     if data.target.epoch == get_current_epoch(state):
         assert data.source == state.current_justified_checkpoint
         state.current_epoch_attestations.append(pending_attestation)
-        assert len(state.historical_epoch_attestations[1]) < HISTORICAL_EPOCH_FINALITY_WINDOW
-        state.historical_epoch_attestations[1].append(pending_attestation)
+        assert len(state.historical_epoch_attestations[0]) < HISTORICAL_EPOCH_FINALITY_WINDOW
+        state.historical_epoch_attestations[0].append(attestation)
     else:
         assert data.source == state.previous_justified_checkpoint
         state.previous_epoch_attestations.append(pending_attestation)
-        assert len(state.historical_epoch_attestations[0]) < HISTORICAL_EPOCH_FINALITY_WINDOW
-        state.historical_epoch_attestations[0].append(pending_attestation)
+        assert len(state.historical_epoch_attestations[1]) < HISTORICAL_EPOCH_FINALITY_WINDOW
+        state.historical_epoch_attestations[1].append(attestation)
 
     # Verify signature
     assert is_valid_indexed_attestation(state, get_indexed_attestation(state, attestation))
