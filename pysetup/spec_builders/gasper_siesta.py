@@ -1,9 +1,9 @@
 from .base import BaseSpecBuilder
-from ..constants import EIP6110
+from ..constants import GASPER_SIESTA
 
 
 class GasperSiestaSpecBuilder(BaseSpecBuilder):
-    fork: str = EIP6110
+    fork: str = GASPER_SIESTA
 
     @classmethod
     def imports(cls, preset_name: str):
