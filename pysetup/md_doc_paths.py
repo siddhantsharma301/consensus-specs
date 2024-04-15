@@ -11,7 +11,7 @@ from .constants import (
     EIP7549,
     WHISK,
     EIP7594,
-    GASPER_SIESTA
+    GASPER_SIESTA,
 )
 
 
