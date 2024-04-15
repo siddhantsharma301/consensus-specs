@@ -60,7 +60,7 @@ Care must be taken when transitioning through the fork boundary as implementatio
 In particular, the outer `state_transition` function defined in the Phase 0 document will not expose the precise fork slot to execute the upgrade in the presence of skipped slots at the fork boundary. Instead the logic must be within `process_slots`.
 
 ```python
-def populate_historical_attestations(pre: phase0.BeaconState) -> Vector[List[PendingAttestation, MAX_ATTESTATIONS], HISTORICAL_EPOCH_FINALITY_WINDOW * SLOTS_PER_EPOCH]:
+def populate_historical_attestations(pre: phase0.BeaconState) -> List[List[PendingAttestation, MAX_ATTESTATIONS], HISTORICAL_EPOCH_FINALITY_WINDOW * SLOTS_PER_EPOCH]:
     historical_attestations = [[] for _ in range(HISTORICAL_EPOCH_FINALITY_WINDOW * SLOTS_PER_EPOCH)]
     current_slot = pre.slot
     previous_epoch_attestations = pre.previous_epoch_attestations
@@ -73,15 +73,20 @@ def populate_historical_attestations(pre: phase0.BeaconState) -> Vector[List[Pen
     return historical_attestations    
 
 
-def populate_historical_chain(pre: phase0.BeaconState) -> Sequence[ChainHistory, HISTORICAL_EPOCH_FINALITY_WINDOW * SLOTS_PER_EPOCH]:
+def populate_historical_chain(pre: phase0.BeaconState) -> List[ChainHistory, HISTORICAL_EPOCH_FINALITY_WINDOW * SLOTS_PER_EPOCH]:
     historical_chain = []
     for i in range(HISTORICAL_EPOCH_FINALITY_WINDOW * SLOTS_PER_EPOCH):
-        slot_number = pre.slot - i
+        if pre.slot < i + 1:
+            break
+        slot_number = pre.slot - i - 1
+        curr_root = Bytes32() if slot_number == 0 else get_block_root_at_slot(pre, slot_number)
+        parent_root = Bytes32() if slot_number == 0 else get_block_root_at_slot(pre, slot_number - 1)
+        parent_slot = 0 if slot_number == 0 else slot_number - 1
         history = ChainHistory(
-            block_root=get_block_root_at_slot(pre, slot_number),
-            parent_root=[get_block_root_at_slot(pre, slot_number - 1)],
-            slot = slot_number,
-            parent_slot = slot_number - 1
+            block_root=curr_root,
+            parent_root=parent_root,
+            slot=slot_number,
+            parent_slot=parent_slot,
         )
         historical_chain.append(history)
     return historical_chain

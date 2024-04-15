@@ -34,6 +34,8 @@ def test_fork_base_state(spec, phases, state):
 @with_meta_tags(GASPER_SIESTA_FORK_TEST_META_TAGS)
 def test_fork_next_epoch(spec, phases, state):
     next_epoch(spec, state)
+    print("STATE SLOT IS ", state.slot)
+    print("STATE ")
     yield from run_fork_test(phases[GASPER_SIESTA], state)
 
 
@@ -43,6 +45,7 @@ def test_fork_next_epoch(spec, phases, state):
 @with_meta_tags(GASPER_SIESTA_FORK_TEST_META_TAGS)
 def test_fork_next_epoch_with_block(spec, phases, state):
     next_epoch_via_block(spec, state)
+    print("STATE SLOT IS ", state.slot)
     yield from run_fork_test(phases[GASPER_SIESTA], state)
 
 

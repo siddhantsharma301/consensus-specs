@@ -85,9 +85,9 @@ class Attestation(phase0.Attestation):
 ```python
 class BeaconState(phase0.BeaconState):
     # Store historical `Attestation` across all slots
-    historical_attestations: Vector[List[Attestation, MAX_ATTESTATIONS], SLOTS_PER_EPOCH * HISTORICAL_EPOCH_FINALITY_WINDOW]
+    historical_attestations: List[List[Attestation, MAX_ATTESTATIONS], SLOTS_PER_EPOCH * HISTORICAL_EPOCH_FINALITY_WINDOW]
     # Store a `ChainHistory` container per slot for each epoch in our finality window
-    historical_chain: Vector[ChainHistory, SLOTS_PER_EPOCH * HISTORICAL_EPOCH_FINALITY_WINDOW]
+    historical_chain: List[ChainHistory, SLOTS_PER_EPOCH * HISTORICAL_EPOCH_FINALITY_WINDOW]
 ```
 
 ## Helper functions
