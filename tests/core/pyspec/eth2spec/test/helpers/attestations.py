@@ -111,6 +111,7 @@ def get_valid_attestation(spec,
     attestation = spec.Attestation(
         aggregation_bits=aggregation_bits,
         data=attestation_data,
+        justification_chain=[],
     )
     # fill the attestation with (optionally filtered) participants, and optionally sign it
     fill_aggregate_attestation(spec, state, attestation, signed=signed, filter_participant_set=filter_participant_set)
