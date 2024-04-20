@@ -80,6 +80,27 @@ class Attestation(phase0.Attestation):
 
 ### Beacon state
 
+```python
+def process_slot(state: BeaconState) -> None:
+    # Cache state root
+    previous_state_root = hash_tree_root(state)
+    state.state_roots[state.slot % SLOTS_PER_HISTORICAL_ROOT] = previous_state_root
+    # Cache latest block header state root
+    if state.latest_block_header.state_root == Bytes32():
+        state.latest_block_header.state_root = previous_state_root
+    # Cache block root
+    previous_block_root = hash_tree_root(state.latest_block_header)
+    state.block_roots[state.slot % SLOTS_PER_HISTORICAL_ROOT] = previous_block_root
+    # Update state's historical chain record
+    state.historical_chain[1:] = state.historical_chain[:SLOTS_PER_HISTORICAL_ROOT * HISTORICAL_EPOCH_FINALITY_WINDOW - 1]
+    state.historical_chain[0] = ChainHistory(
+        block_root=previous_block_root,
+        parent_root=previous_state_root,
+        slot=state.slot,
+        parent_slot=state.slot - 1,
+    )
+```
+
 #### `BeaconState`
 
 ```python
@@ -119,11 +140,21 @@ def weigh_justification_and_finalization(state: BeaconState,
         state.justification_bits[0] = 0b1
 
     for epoch in range(state.previous_justified_checkpoint.epoch, current_epoch):
-        previous_block_root = state.historical_block_roots[epoch % SLOTS_PER_HISTORICAL_ROOT]
-        conflicting_stake = get_conflicting_historical_attestation_stake(state, epoch, previous_block_root)
-        # TODO: check if threshold correct
-        if conflicting_stake > Gwei(0):
-            break
+        for slot in range(epoch * SLOTS_PER_EPOCH):
+            current_slot = epoch * SLOTS_PER_EPOCH + slot
+            chain_history = state.historical_chain[(epoch * SLOTS_PER_EPOCH + slot) % SLOTS_PER_HISTORICAL_ROOT]
+            # if the slot was missed, construct a "dummy" `ChainHistory` objec to pass into conflicting
+            # historical attestation check
+            if chain_history.slot != current_slot:
+                chain_history = ChainHistory(
+                    block_root=Bytes32(),
+                    parent_root=Bytes32(),
+                    slot=current_slot,
+                    parent_slot=current_slot,
+                )
+            conflicting_stake = get_conflicting_historical_attestation_stake(state, slot, chain_history.block_root)
+            if conflicting_stake > Gwei(0):
+                break
     state.finalized_checkpoint = state.previous_justified_checkpoint
 ```
 
@@ -135,25 +166,19 @@ def is_in_justified_checkpoint_chain(state: BeaconState, attestation: Attestatio
 ```
 
 ```python
-def get_conflicting_historical_attestation_stake(state: BeaconState, epoch: Epoch, block_root: Root) -> Gwei:
+def get_conflicting_historical_attestation_stake(state: BeaconState, slot: Slot, block_root: Root) -> Gwei:
     """
-    Return the total stake of validators that made conflicting attestations for the given epoch and block root.
+    Return the total stake of validators that made conflicting attestations for the given slot and block root.
     """ 
     conflicting_stake = Gwei(0)
-    for slot_attestations in state.historical_attestations:
-        for attestation in slot_attestations:
-            if attestation.data.target.epoch == epoch and not is_in_justified_checkpoint_chain(state, attestation):
-                # TODO: Check if we can check historical effective balance
-                conflicting_stake += sum(state.validators[index].effective_balance for index in get_attesting_indices(state, attestation))
+    attestation_index = state.slot - slot
+    for attestation in state.historical_attestations[attestation_index]:
+        # If the attestation votes on a different target or lives on a fork of our version of the 
+        # chain, it is conflicting.
+        if attestation.data.target.root != block_root or not is_in_justified_checkpoint_chain(state, attestation):
+            # TODO: Check if we can check historical effective balance
+            conflicting_stake += sum(state.validators[index].effective_balance for index in get_attesting_indices(state, attestation))
     return conflicting_stake
-```
-
-```python
-def get_total_active_balance_at_epoch(state: BeaconState, epoch: Epoch) -> Gwei:
-    # TODO: Check if we can check historical effective balance
-    return Gwei(sum(
-        state.validators[index].effective_balance for index in get_active_validator_indices(state, epoch)
-    ))
 ```
 
 ### Block processing
@@ -183,13 +208,15 @@ def process_attestation(state: BeaconState, attestation: Attestation) -> None:
     if data.target.epoch == get_current_epoch(state):
         assert data.source == state.current_justified_checkpoint
         state.current_epoch_attestations.append(pending_attestation)
-        assert len(state.historical_epoch_attestations[0]) < HISTORICAL_EPOCH_FINALITY_WINDOW
-        state.historical_epoch_attestations[0].append(attestation)
     else:
         assert data.source == state.previous_justified_checkpoint
         state.previous_epoch_attestations.append(pending_attestation)
-        assert len(state.historical_epoch_attestations[1]) < HISTORICAL_EPOCH_FINALITY_WINDOW
-        state.historical_epoch_attestations[1].append(attestation)
+    
+    # Check which slot the attestation belongs to. Add it to the historical attestations
+    slots_ago = state.slot - attestation.data.slot
+    # TODO: check oboe
+    assert slots_ago <= HISTORICAL_EPOCH_FINALITY_WINDOW * SLOTS_PER_EPOCH
+    state.historical_attestations[slots_ago].append(attestation)
 
     # Verify signature
     assert is_valid_indexed_attestation(state, get_indexed_attestation(state, attestation))
