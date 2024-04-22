@@ -92,12 +92,15 @@ def process_slot(state: BeaconState) -> None:
     previous_block_root = hash_tree_root(state.latest_block_header)
     state.block_roots[state.slot % SLOTS_PER_HISTORICAL_ROOT] = previous_block_root
     # Update state's historical chain record
-    state.historical_chain[1:] = state.historical_chain[:SLOTS_PER_HISTORICAL_ROOT * HISTORICAL_EPOCH_FINALITY_WINDOW - 1]
+    if len(state.historical_chain) < SLOTS_PER_EPOCH * HISTORICAL_EPOCH_FINALITY_WINDOW:
+        for _ in range(SLOTS_PER_EPOCH * HISTORICAL_EPOCH_FINALITY_WINDOW - len(state.historical_chain)):
+            state.historical_chain.append(ChainHistory())
+    state.historical_chain[1:] = state.historical_chain[:(SLOTS_PER_EPOCH * HISTORICAL_EPOCH_FINALITY_WINDOW) - 1]
     state.historical_chain[0] = ChainHistory(
         block_root=previous_block_root,
         parent_root=previous_state_root,
         slot=state.slot,
-        parent_slot=state.slot - 1,
+        parent_slot=state.slot -1 if state.slot > 0 else 0,
     )
 ```
 
@@ -171,6 +174,7 @@ def get_conflicting_historical_attestation_stake(state: BeaconState, slot: Slot,
     Return the total stake of validators that made conflicting attestations for the given slot and block root.
     """ 
     conflicting_stake = Gwei(0)
+    # print("STATE SLOT ", state.slot, slot)
     attestation_index = state.slot - slot
     for attestation in state.historical_attestations[attestation_index]:
         # If the attestation votes on a different target or lives on a fork of our version of the 
