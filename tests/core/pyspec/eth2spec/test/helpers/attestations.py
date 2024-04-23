@@ -5,7 +5,7 @@ from typing import List
 from eth2spec.test.context import expect_assertion_error
 from eth2spec.test.helpers.state import state_transition_and_sign_block, next_epoch, next_slot
 from eth2spec.test.helpers.block import build_empty_block_for_next_slot
-from eth2spec.test.helpers.forks import is_post_altair, is_post_deneb
+from eth2spec.test.helpers.forks import is_post_altair, is_post_deneb, is_post_gasper_siesta
 from eth2spec.test.helpers.keys import privkeys
 from eth2spec.utils import bls
 from eth2spec.utils.ssz.ssz_typing import Bitlist
@@ -108,11 +108,17 @@ def get_valid_attestation(spec,
 
     committee_size = len(beacon_committee)
     aggregation_bits = Bitlist[spec.MAX_VALIDATORS_PER_COMMITTEE](*([0] * committee_size))
-    attestation = spec.Attestation(
-        aggregation_bits=aggregation_bits,
-        data=attestation_data,
-        justification_chain=[],
-    )
+    if is_post_gasper_siesta(spec):
+        attestation = spec.Attestation(
+            aggregation_bits=aggregation_bits,
+            data=attestation_data,
+            justification_chain=[],
+        )
+    else:
+        attestation = spec.Attestation(
+            aggregation_bits=aggregation_bits,
+            data=attestation_data,
+        )
     # fill the attestation with (optionally filtered) participants, and optionally sign it
     fill_aggregate_attestation(spec, state, attestation, signed=signed, filter_participant_set=filter_participant_set)
 

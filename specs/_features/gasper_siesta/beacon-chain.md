@@ -74,7 +74,7 @@ NOTE: We consider a `ChainHistory` object to be empty if the `block_root` or `pa
 ```python
 class Attestation(phase0.Attestation):
     # Store the chain of block roots that were used to construct this attestation
-    justification_chain: Vector[ChainHistory, SLOTS_PER_EPOCH * HISTORICAL_EPOCH_FINALITY_WINDOW]
+    justification_chain: List[ChainHistory, SLOTS_PER_EPOCH * HISTORICAL_EPOCH_FINALITY_WINDOW]
 ```
 
 
@@ -100,7 +100,7 @@ def process_slot(state: BeaconState) -> None:
         block_root=previous_block_root,
         parent_root=previous_state_root,
         slot=state.slot,
-        parent_slot=state.slot -1 if state.slot > 0 else 0,
+        parent_slot=state.slot - 1 if state.slot > 0 else 0,
     )
 ```
 
@@ -145,8 +145,10 @@ def weigh_justification_and_finalization(state: BeaconState,
     for epoch in range(state.previous_justified_checkpoint.epoch, current_epoch):
         for slot in range(epoch * SLOTS_PER_EPOCH):
             current_slot = epoch * SLOTS_PER_EPOCH + slot
-            chain_history = state.historical_chain[(epoch * SLOTS_PER_EPOCH + slot) % SLOTS_PER_HISTORICAL_ROOT]
-            # if the slot was missed, construct a "dummy" `ChainHistory` objec to pass into conflicting
+            if current_slot > state.slot:
+                break
+            chain_history = state.historical_chain[current_slot % SLOTS_PER_EPOCH * HISTORICAL_EPOCH_FINALITY_WINDOW]
+            # if the slot was missed, construct a "dummy" `ChainHistory` object to pass into conflicting
             # historical attestation check
             if chain_history.slot != current_slot:
                 chain_history = ChainHistory(
@@ -155,7 +157,7 @@ def weigh_justification_and_finalization(state: BeaconState,
                     slot=current_slot,
                     parent_slot=current_slot,
                 )
-            conflicting_stake = get_conflicting_historical_attestation_stake(state, slot, chain_history.block_root)
+            conflicting_stake = get_conflicting_historical_attestation_stake(state, current_slot, chain_history.block_root)
             if conflicting_stake > Gwei(0):
                 break
     state.finalized_checkpoint = state.previous_justified_checkpoint
@@ -174,8 +176,8 @@ def get_conflicting_historical_attestation_stake(state: BeaconState, slot: Slot,
     Return the total stake of validators that made conflicting attestations for the given slot and block root.
     """ 
     conflicting_stake = Gwei(0)
-    # print("STATE SLOT ", state.slot, slot)
     attestation_index = state.slot - slot
+    assert attestation_index < SLOTS_PER_EPOCH * HISTORICAL_EPOCH_FINALITY_WINDOW, f"Attestation is too old to get conflicting historical conflicting stake: {state.slot}, {slot}"
     for attestation in state.historical_attestations[attestation_index]:
         # If the attestation votes on a different target or lives on a fork of our version of the 
         # chain, it is conflicting.
